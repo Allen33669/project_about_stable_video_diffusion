@@ -5,9 +5,9 @@
 <body>
 <h3>Stable Video Diffusion is licensed under the Stable Video Diffusion Research License, Copyright (c) Stability AI Ltd. All Rights Reserved.</h3>
 <ul>
-  <li>link source github</li>
-  <li>link license</li>
-  <li>link notice</li>
+  <li><a href=https://github.com/Allen33669/stable_video_diffusion_project>source github</a></li>
+  <li><a href=https://github.com/Allen33669/stable_video_diffusion_project/blob/main/LICENSE.txt>license</a></li>
+  <li><a href=https://github.com/Allen33669/stable_video_diffusion_project/blob/main/Notice.txt>notice</a></li>
 </ul>
 <br>
 <br>
@@ -33,6 +33,7 @@
 <br>
 <br>
 <br>
+<ul>
 <blockquote>
 <h3>0.1.0: </h3>
 <blockquote>
@@ -41,11 +42,6 @@ project_stable_video_diffusion_0_1_0.ipynb<br>
 </blockquote>
 </blockquote>
 <br>
-
-
-
-
-
 
 
 
