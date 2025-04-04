@@ -50,13 +50,6 @@
 
 
 
-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-0.1.0:
-A brief introduction to the paper and SVD source code:
-  project_stable_video_diffusion_0_1_0.ipynb
-
-print information in inference process
-slight adjust sampling process
 
 
 
