@@ -33,15 +33,13 @@
 <br>
 <br>
 <br>
-<ul>
 <blockquote>
 <h3>0.1.0: </h3>
 <blockquote>
-<li>  Stable Video Diffusion: A brief introduction to the paper and SVD source code: inference</li>
-<li>    project_stable_video_diffusion_0_1_0.ipynb</li>
+Stable Video Diffusion: A brief introduction to the paper and SVD source code: inference<br>
+project_stable_video_diffusion_0_1_0.ipynb<br>
 </blockquote>
 </blockquote>
-</ul>
 <br>
 
 
