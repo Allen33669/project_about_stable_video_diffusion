@@ -1,0 +1,7 @@
+Stable Video Diffusion is licensed under the Stable Video Diffusion Research License, Copyright (c) Stability AI Ltd. All Rights Reserved.
+This Stability AI Model is licensed under the Stability AI Community License, Copyright © Stability AI Ltd. All Rights Reserved
+Powered by Stability AI
+
+Derivative Work:
+print information
+slightly adjust sampling process
