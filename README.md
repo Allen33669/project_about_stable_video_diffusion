@@ -38,10 +38,11 @@
 <h3>0.1.0: </h3>
 <blockquote>
 Stable Video Diffusion: A brief introduction to the paper and SVD source code: inference<br>
-project_stable_video_diffusion_0_1_0.ipynb<br>
+project_about_stable_video_diffusion_0_1_0.ipynb<br>
 </blockquote>
 </blockquote>
 <br>
+
 
 
 
