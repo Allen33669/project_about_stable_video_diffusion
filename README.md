@@ -29,7 +29,7 @@
 <br>
 <br>
 <h1>Personal portfolio space:</h1>
-<h2>Stable Video Diffusion project:</h2>
+<h2>project about stable video diffusion:</h2>
 <br>
 <br>
 <br>
@@ -42,9 +42,6 @@ project_about_stable_video_diffusion_0_1_0.ipynb<br>
 </blockquote>
 </blockquote>
 <br>
-
-
-
 
 
 
