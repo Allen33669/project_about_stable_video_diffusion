@@ -35,6 +35,12 @@
 <br>
 <ul>
 <blockquote>
+<h3>1.0.0: </h3>
+<blockquote>
+PEFT (Parameter-Efficient Fine-Tuning) and LoRA (Low-Rank Adaptation): A brief introduction to LoRA<br>
+project_about_stable_video_diffusion_1_0_0.ipynb<br>
+</blockquote>
+<br>
 <h3>0.1.0: </h3>
 <blockquote>
 Stable Video Diffusion: A brief introduction to the paper and SVD source code: inference<br>
@@ -42,6 +48,25 @@ project_about_stable_video_diffusion_0_1_0.ipynb<br>
 </blockquote>
 </blockquote>
 <br>
+
+
+
+
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+1.0.0:
+PEFT (Parameter-Efficient Fine-Tuning) and LoRA (Low-Rank Adaptation): A brief introduction to LoRA:
+  project_about_stable_video_diffusion_1_0_0.ipynb
+
+
+0.1.0:
+A brief introduction to the paper and SVD source code:
+  project_about_stable_video_diffusion_0_1_0.ipynb
+
+print information in inference process
+slight adjust sampling process
 
 
 
