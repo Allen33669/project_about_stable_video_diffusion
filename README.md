@@ -35,10 +35,25 @@
 <br>
 <ul>
 <blockquote>
+<h3>1.1.0: </h3>
+<blockquote>
+PEFT (Parameter-Efficient Fine-Tuning) and LoRA (Low-Rank Adaptation): A brief introduction to LoRA<br>
+project_about_stable_video_diffusion_1_1_0.ipynb:<br>
+  Multiple LoRA / Multi-task<br>
+  LoRA composition<br>
+  LoRA generalized framework<br>
+</blockquote>
+<br>
 <h3>1.0.0: </h3>
 <blockquote>
 PEFT (Parameter-Efficient Fine-Tuning) and LoRA (Low-Rank Adaptation): A brief introduction to LoRA<br>
-project_about_stable_video_diffusion_1_0_0.ipynb<br>
+project_about_stable_video_diffusion_1_0_0.ipynb:<br>
+    PEFT brief introduction and Why LoRA?<br>
+    LoRA position / layer<br>
+    LoRA rank<br>
+    LoRA learning rate<br>
+    LoRA architecture<br>
+    REFERENCES<br>
 </blockquote>
 <br>
 <h3>0.1.0: </h3>
@@ -48,16 +63,5 @@ project_about_stable_video_diffusion_0_1_0.ipynb<br>
 </blockquote>
 </blockquote>
 <br>
-
-
-
-
-
-
-
-
-
-
-
 
 
