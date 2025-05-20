@@ -35,6 +35,13 @@
 <br>
 <ul>
 <blockquote>
+<h3>1.3.0: </h3>
+<blockquote>
+PEFT (Parameter-Efficient Fine-Tuning) and LoRA (Low-Rank Adaptation): A brief introduction to LoRA<br>
+project_about_stable_video_diffusion_1_3_0.ipynb:<br>
+  LoRA application: Video generation<br>
+</blockquote>
+<br>
 <h3>1.2.0: </h3>
 <blockquote>
 PEFT (Parameter-Efficient Fine-Tuning) and LoRA (Low-Rank Adaptation): A brief introduction to LoRA<br>
@@ -71,6 +78,56 @@ project_about_stable_video_diffusion_0_1_0.ipynb<br>
 </blockquote>
 </blockquote>
 <br>
+
+
+
+
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+1.3.0:
+PEFT (Parameter-Efficient Fine-Tuning) and LoRA (Low-Rank Adaptation): A brief introduction to LoRA:
+  project_about_stable_video_diffusion_1_3_0.ipynb
+    LoRA application: Video generation
+
+
+
+1.2.0:
+PEFT (Parameter-Efficient Fine-Tuning) and LoRA (Low-Rank Adaptation): A brief introduction to LoRA:
+  project_about_stable_video_diffusion_1_2_0.ipynb
+    LoRA mixture of experts brief introduction
+    LoRA MoE
+
+
+
+1.1.0:
+PEFT (Parameter-Efficient Fine-Tuning) and LoRA (Low-Rank Adaptation): A brief introduction to LoRA:
+  project_about_stable_video_diffusion_1_1_0.ipynb
+    Multiple LoRA / Multi-task
+    LoRA composition
+    LoRA generalized framework
+
+
+
+1.0.0:
+PEFT (Parameter-Efficient Fine-Tuning) and LoRA (Low-Rank Adaptation): A brief introduction to LoRA:
+  project_about_stable_video_diffusion_1_0_0.ipynb
+    PEFT brief introduction and Why LoRA?
+    LoRA position / layer
+    LoRA rank
+    LoRA learning rate
+    LoRA architecture
+    REFERENCES
+
+
+
+0.1.0:
+A brief introduction to the paper and SVD source code:
+  project_about_stable_video_diffusion_0_1_0.ipynb
+
+print information in inference process
+slight adjust sampling process
 
 
 
