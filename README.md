@@ -37,7 +37,7 @@
 <blockquote>
 <h3>2.0.1: </h3>
 <blockquote>
-SVD partial fine-tuning<br>
+Stable Video Diffusion: A brief introduction to the paper and SVD source code: SVD partial fine-tuning<br>
 project_about_stable_video_diffusion_2_0_1.ipynb:<br>
   prepare training dataset<br>
   training configuration<br>
