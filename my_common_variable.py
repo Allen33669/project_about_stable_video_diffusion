@@ -1,0 +1,5 @@
+project_folder = "/content/generative-models"
+dataset_folder = "/content/generative-models/dataset"
+dataset_file = "/content/generative-models/dataset/svd_dataset.yaml"
+frames_folder = "/content/generative-models/dataset/frames"
+check_point_folder = "/content/generative-models/checkpoints"

@@ -1,0 +1,288 @@
+frame a43325.jpg: 
+  cond_frames_without_noise: frame a43325.jpg
+  cond_frames: frame a43325.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43326.jpg: 
+  cond_frames_without_noise: frame a43325.jpg
+  cond_frames: frame a43325.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43327.jpg: 
+  cond_frames_without_noise: frame a43325.jpg
+  cond_frames: frame a43325.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43328.jpg: 
+  cond_frames_without_noise: frame a43325.jpg
+  cond_frames: frame a43325.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43329.jpg: 
+  cond_frames_without_noise: frame a43325.jpg
+  cond_frames: frame a43325.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43330.jpg: 
+  cond_frames_without_noise: frame a43325.jpg
+  cond_frames: frame a43325.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43397.jpg: 
+  cond_frames_without_noise: frame a43397.jpg
+  cond_frames: frame a43397.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43398.jpg: 
+  cond_frames_without_noise: frame a43397.jpg
+  cond_frames: frame a43397.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43399.jpg: 
+  cond_frames_without_noise: frame a43397.jpg
+  cond_frames: frame a43397.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43400.jpg: 
+  cond_frames_without_noise: frame a43397.jpg
+  cond_frames: frame a43397.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43401.jpg: 
+  cond_frames_without_noise: frame a43397.jpg
+  cond_frames: frame a43397.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43402.jpg: 
+  cond_frames_without_noise: frame a43397.jpg
+  cond_frames: frame a43397.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43409.jpg: 
+  cond_frames_without_noise: frame a43409.jpg
+  cond_frames: frame a43409.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43410.jpg: 
+  cond_frames_without_noise: frame a43409.jpg
+  cond_frames: frame a43409.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43411.jpg: 
+  cond_frames_without_noise: frame a43409.jpg
+  cond_frames: frame a43409.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43412.jpg: 
+  cond_frames_without_noise: frame a43409.jpg
+  cond_frames: frame a43409.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43413.jpg: 
+  cond_frames_without_noise: frame a43409.jpg
+  cond_frames: frame a43409.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43414.jpg: 
+  cond_frames_without_noise: frame a43409.jpg
+  cond_frames: frame a43409.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43423.jpg: 
+  cond_frames_without_noise: frame a43423.jpg
+  cond_frames: frame a43423.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43424.jpg: 
+  cond_frames_without_noise: frame a43423.jpg
+  cond_frames: frame a43423.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43425.jpg: 
+  cond_frames_without_noise: frame a43423.jpg
+  cond_frames: frame a43423.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43426.jpg: 
+  cond_frames_without_noise: frame a43423.jpg
+  cond_frames: frame a43423.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43427.jpg: 
+  cond_frames_without_noise: frame a43423.jpg
+  cond_frames: frame a43423.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43428.jpg: 
+  cond_frames_without_noise: frame a43423.jpg
+  cond_frames: frame a43423.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43476.jpg: 
+  cond_frames_without_noise: frame a43476.jpg
+  cond_frames: frame a43476.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43477.jpg: 
+  cond_frames_without_noise: frame a43476.jpg
+  cond_frames: frame a43476.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43478.jpg: 
+  cond_frames_without_noise: frame a43476.jpg
+  cond_frames: frame a43476.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43479.jpg: 
+  cond_frames_without_noise: frame a43476.jpg
+  cond_frames: frame a43476.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43480.jpg: 
+  cond_frames_without_noise: frame a43476.jpg
+  cond_frames: frame a43476.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43481.jpg: 
+  cond_frames_without_noise: frame a43476.jpg
+  cond_frames: frame a43476.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43580.jpg: 
+  cond_frames_without_noise: frame a43580.jpg
+  cond_frames: frame a43580.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43581.jpg: 
+  cond_frames_without_noise: frame a43580.jpg
+  cond_frames: frame a43580.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43582.jpg: 
+  cond_frames_without_noise: frame a43580.jpg
+  cond_frames: frame a43580.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43583.jpg: 
+  cond_frames_without_noise: frame a43580.jpg
+  cond_frames: frame a43580.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43584.jpg: 
+  cond_frames_without_noise: frame a43580.jpg
+  cond_frames: frame a43580.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
+frame a43585.jpg: 
+  cond_frames_without_noise: frame a43580.jpg
+  cond_frames: frame a43580.jpg
+  fps_id: 6
+  motion_bucket_id: 127
+  cond_aug: 0.02
+  num_video_frames: 6
+
