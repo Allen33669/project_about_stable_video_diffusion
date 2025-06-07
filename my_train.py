@@ -24,6 +24,8 @@ from sgm.inference.helpers import embed_watermark
 from sgm.util import default, instantiate_from_config
 from torchvision.transforms import ToTensor
 
+
+
 from torch.utils.data import DataLoader
 from pytorch_lightning import Trainer
 
@@ -31,38 +33,8 @@ from pytorch_lightning import Trainer
 
 from my_common_variable import *
 from my_dataset2 import SVDDataset
-
-
-
-# This is adapted from generative-models/scripts/sampling/simple_video_sample.py
-def load_model(
-    config: str,
-    device: str,
-    num_frames: int,
-    num_steps: int,
-    verbose: bool = False,
-):
-    config = OmegaConf.load(config)
-    if device == "cuda":
-        config.model.params.conditioner_config.params.emb_models[
-            0
-        ].params.open_clip_embedding_config.params.init_device = device
-
-    config.model.params.sampler_config.params.verbose = verbose
-    config.model.params.sampler_config.params.num_steps = num_steps
-    config.model.params.sampler_config.params.guider_config.params.num_frames = (
-        num_frames
-    )
-    if device == "cuda":
-        with torch.device(device):
-            #model = instantiate_from_config(config.model).to(device).eval()
-            model = instantiate_from_config(config.model).to(device) #modified code start end
-    else:
-        #model = instantiate_from_config(config.model).to(device).eval()
-        model = instantiate_from_config(config.model).to(device) #modified code start end
-
-    filter = DeepFloydDataFiltering(verbose=False, device=device)
-    return model, filter
+from my_utils import load_model
+from my_lora_handler import *
 
 
 
@@ -97,14 +69,111 @@ model, _ = load_model(
 
 
 
-#freeze part of model when training, only middle_block is training
-for param in model.parameters():
+#replace ConvXd module to LoraConvXd module
+add_lora_into_model(model.model.diffusion_model.middle_block, "model.model.diffusion_model.middle_block", "Conv1d", 0)
+add_lora_into_model(model.model.diffusion_model.middle_block, "model.model.diffusion_model.middle_block", "Conv2d", 0)
+add_lora_into_model(model.model.diffusion_model.middle_block, "model.model.diffusion_model.middle_block", "Conv3d", 0)
+
+
+
+# Disable gradients for frozen layers
+for name, module in model.model.diffusion_model.time_embed.named_children():
+  for param in module.parameters():
     param.requires_grad = False
 
-for param in model.model.diffusion_model.middle_block.parameters():
-    param.requires_grad = True
+for name, module in model.model.diffusion_model.label_emb[0].named_children():
+  for param in module.parameters():
+    param.requires_grad = False
+
+for param in model.model.diffusion_model.input_blocks.parameters():
+  param.requires_grad = False
+
+for param in model.model.diffusion_model.output_blocks.parameters():
+  param.requires_grad = False
+
+for name, module in model.model.diffusion_model.out.named_children():
+  for param in module.parameters():
+    param.requires_grad = False
 
 
 
+for param in model.model.diffusion_model.middle_block[0].in_layers[2].conv.parameters():
+  param.requires_grad = False
+
+for param in model.model.diffusion_model.middle_block[0].emb_layers[1].parameters():
+  param.requires_grad = False
+
+for param in model.model.diffusion_model.middle_block[0].out_layers[3].conv.parameters():
+  param.requires_grad = False
+
+for param in model.model.diffusion_model.middle_block[0].time_stack.in_layers[2].conv.parameters():
+  param.requires_grad = False
+
+for param in model.model.diffusion_model.middle_block[0].time_stack.emb_layers[1].parameters():
+  param.requires_grad = False
+
+for param in model.model.diffusion_model.middle_block[0].time_stack.out_layers[3].conv.parameters():
+  param.requires_grad = False
+
+
+
+for name, module in model.model.diffusion_model.middle_block[1].named_children():
+  for param in module.parameters():
+    param.requires_grad = False
+
+    
+
+for param in model.model.diffusion_model.middle_block[2].in_layers[2].conv.parameters():
+  param.requires_grad = False
+
+for param in model.model.diffusion_model.middle_block[2].emb_layers[1].parameters():
+  param.requires_grad = False
+
+for param in model.model.diffusion_model.middle_block[2].out_layers[3].conv.parameters():
+  param.requires_grad = False
+
+for param in model.model.diffusion_model.middle_block[2].time_stack.in_layers[2].conv.parameters():
+  param.requires_grad = False
+
+for param in model.model.diffusion_model.middle_block[2].time_stack.emb_layers[1].parameters():
+  param.requires_grad = False
+
+for param in model.model.diffusion_model.middle_block[2].time_stack.out_layers[3].conv.parameters():
+  param.requires_grad = False
+
+
+
+# enable gradients for all lora layers
+enable_lora_train(model, "Lora", 0)
+
+
+
+#train the model
 trainer = Trainer(max_epochs=2)
 trainer.fit(model, dataloader)
+
+
+
+#save lora weight into .pth
+lora_weight = []
+save_lora(model, "/content/generative-models/lora_weight.pth", "model", lora_weight)
+
+
+
+#load model and update lora weight by .pth
+model_test, _ = load_model(
+        model_config,
+        device,
+        num_frames,
+        num_steps,
+        verbose,
+)
+
+
+
+load_lora(model_test, "/content/generative-models/lora_weight.pth")
+
+
+
+
+

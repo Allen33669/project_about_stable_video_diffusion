@@ -5,3 +5,4 @@ Powered by Stability AI
 Derivative Work:
 print information
 slightly adjust sampling process
+LoRA ConvXd

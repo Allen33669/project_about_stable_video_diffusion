@@ -16,6 +16,7 @@ from ..util import (default, disabled_train, get_obj_from_str,
                     instantiate_from_config, log_txt_as_img)
 
 
+
 class DiffusionEngine(pl.LightningModule):
     def __init__(
         self,
@@ -43,9 +44,12 @@ class DiffusionEngine(pl.LightningModule):
         image_only_indicator: Optional[int] = 0, 
     ):
         super().__init__()
+        
         self.learning_rate = learning_rate 
         self.num_video_frames = num_video_frames 
         self.image_only_indicator = image_only_indicator 
+        self.track_gradients_print_number = 0 #the accumulated number of track_gradients print information
+        self.automatic_optimization = False
 
         self.log_keys = log_keys
         self.input_key = input_key
@@ -169,11 +173,47 @@ class DiffusionEngine(pl.LightningModule):
         loss, loss_dict = self(x, batch)
         return loss, loss_dict
 
+    def track_gradients(self, model, depth: int, depth_max: int = 20, print_number_max: int = 5):
+        if depth >= depth_max:
+          return
+
+        if self.track_gradients_print_number >= print_number_max:
+          return
+
+        depth += 1
+ 
+        for module_name, module in model.named_modules():
+            for param_name, param in module.named_parameters():
+                if param.requires_grad == True:
+                  if (param.grad is not None) and (param.grad.norm().item() > 0):
+                    if param_name == "lora_up.weight" or param_name == "lora_down.weight":
+                      print(f"-" * 50)
+                      print(f"DiffusionEngine > track_gradients > depth: {depth}")
+                      print(f"DiffusionEngine > track_gradients > Module: {module_name}, Param: {param_name}, requires_grad={param.requires_grad}, is_leaf: {param.is_leaf}, param.grad_fn: {param.grad_fn}")
+                      print(f"DiffusionEngine > track_gradients > param.grad.norm().item(): {param.grad.norm().item()}")
+                      self.track_gradients_print_number += 1
+
+            self.track_gradients(module, depth)
+
     def training_step(self, batch, batch_idx):
         batch["num_video_frames"] = self.num_video_frames 
         batch["image_only_indicator"] = torch.tensor(self.image_only_indicator, device="cuda") 
 
+        opt = self.optimizers()
+
+        print("-" * 50)
+        print(f"DiffusionEngine > training_step > Optimizer: {opt}")
+
+        opt.zero_grad()
         loss, loss_dict = self.shared_step(batch)
+
+        print(f'DiffusionEngine > training_step > loss: {loss}')
+
+        self.manual_backward(loss)
+        opt.step()
+ 
+        self.track_gradients_print_number = 0
+        self.track_gradients(self, 0)
 
         self.log_dict(
             loss_dict, prog_bar=True, logger=True, on_step=True, on_epoch=False
@@ -193,8 +233,6 @@ class DiffusionEngine(pl.LightningModule):
             self.log(
                 "lr_abs", lr, prog_bar=True, logger=True, on_step=True, on_epoch=False
             )
-
-        return loss
 
     def on_train_start(self, *args, **kwargs):
         if self.sampler is None or self.loss_fn is None:
@@ -226,11 +264,14 @@ class DiffusionEngine(pl.LightningModule):
 
     def configure_optimizers(self):
         lr = self.learning_rate
+
         params = list(self.model.parameters())
+
+        opt = torch.optim.AdamW(params, lr=lr, weight_decay=1e-5)
+
         for embedder in self.conditioner.embedders:
             if embedder.is_trainable:
                 params = params + list(embedder.parameters())
-        opt = self.instantiate_optimizer_from_config(params, lr, self.optimizer_config)
         if self.scheduler_config is not None:
             scheduler = instantiate_from_config(self.scheduler_config)
             print("Setting up LambdaLR scheduler...")

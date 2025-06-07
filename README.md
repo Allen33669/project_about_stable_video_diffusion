@@ -35,6 +35,16 @@
 <br>
 <ul>
 <blockquote>
+<h3>2.2.1: </h3>
+<blockquote>
+Stable Video Diffusion: A brief introduction to the paper and SVD source code: SVD LoRA fine-tuning<br>
+project_about_stable_video_diffusion_2_2_1.ipynb:<br>
+    LoRA ConvXd class<br>
+    train with LoRA ConvXd<br>
+    save lora weight<br>
+    load lora weight by update weight of the original layer of the base model<br>
+</blockquote>
+<br>
 <h3>2.0.1: </h3>
 <blockquote>
 Stable Video Diffusion: A brief introduction to the paper and SVD source code: SVD partial fine-tuning<br>
@@ -86,6 +96,8 @@ project_about_stable_video_diffusion_0_1_0.ipynb<br>
 </blockquote>
 </blockquote>
 <br>
+
+
 
 
 
