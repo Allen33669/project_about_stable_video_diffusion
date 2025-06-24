@@ -39,24 +39,38 @@ class BaseDiffusionSampler:
         self.device = device
 
     def prepare_sampling_loop(self, x, cond, uc=None, num_steps=None):
+        #modified code start
+        #Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2
+
+        #Elucidating the Design Space of Diffusion-Based Generative Models, Page 5, Formula (5)
+        #produce sigmas
+        #Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2
+        #σ(t) = t
         sigmas = self.discretization(
             self.num_steps if num_steps is None else num_steps, device=self.device
         )
-        print(f"Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2: σ(t) = t")
-        print(f"sigmas: {sigmas}")
+        #print(f"Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2: σ(t) = t")
+        #print(f"sigmas: {sigmas}")
 
+        #unconditions
         uc = default(uc, cond)
 
-        print(f"Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2: sample x0")
-        print(f"original x: {x[:1, :1, :1]}")
+        #Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2
+        #sample x0
+        #print(f"Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2: sample x0")
+        #print(f"original x: {x[:1, :1, :1]}")
         x *= torch.sqrt(1.0 + sigmas[0] ** 2.0)
-        print(f"sampled x: {x[:1]}")
+        #print(f"sampled x: {x[:1]}")
 
         num_sigmas = len(sigmas)
 
+        #Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2
+        #s(t) = 1
         s_in = x.new_ones([x.shape[0]])
-        print(f"Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2: s(t) = 1")
-        print(f"s(t): {s_in}")
+        #print(f"Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2: s(t) = 1")
+        #print(f"s(t): {s_in}")
+
+        #modified code end
 
         return x, s_in, sigmas, num_sigmas, cond, uc
 
@@ -86,12 +100,16 @@ class SingleStepDiffusionSampler(BaseDiffusionSampler):
 
     def euler_step(self, x, d, dt):
         
-        print(f"Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2: Take Euler step from tˆi to t")
-        print(f"x: {x[:1, :1, :1]}")
-        print(f"d: {d[:1, :1, :1]}")
-        print(f"dt: {dt[:1, :1, :1]}")
-        print(f"x + dt * d: {(x + dt * d)[:1, :1, :1]}")
+        #modified code start
+        #Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2
+        #Take Euler step from tˆi to t
+        #print(f"Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2: Take Euler step from tˆi to t")
+        #print(f"x: {x[:1, :1, :1]}")
+        #print(f"d: {d[:1, :1, :1]}")
+        #print(f"dt: {dt[:1, :1, :1]}")
+        #print(f"x + dt * d: {(x + dt * d)[:1, :1, :1]}")
         return x + dt * d
+        #modified code end
 
 
 class EDMSampler(SingleStepDiffusionSampler):
@@ -100,69 +118,93 @@ class EDMSampler(SingleStepDiffusionSampler):
     ):
         super().__init__(*args, **kwargs)
         
+        #modified code start
+        #Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2
+        #used for calculate γ
         self.s_churn = s_churn
-        print(f"Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2: used for calculate γ")
-        print(f"s_churn: {self.s_churn}")
+        #print(f"Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2: used for calculate γ")
+        #print(f"s_churn: {self.s_churn}")
 
 
         self.s_tmin = s_tmin
         self.s_tmax = s_tmax
         self.s_noise = s_noise
+        #modified code end
 
     def sampler_step(self, sigma, next_sigma, denoiser, x, cond, uc=None, gamma=0.0):
+        #modified code start
+        #Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2
+
+        #Select temporarily increased noise level t
         sigma_hat = sigma * (gamma + 1.0)
-        print(f"Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2: Select temporarily increased noise level t")
-        print(f"t: {sigma}")
-        print(f"gamma: {gamma}")
-        print(f"t_hat: {sigma_hat}")
+        #print(f"Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2: Select temporarily increased noise level t")
+        #print(f"t: {sigma}")
+        #print(f"gamma: {gamma}")
+        #print(f"t_hat: {sigma_hat}")
 
         if gamma > 0:
+            #sample new noise
             eps = torch.randn_like(x) * self.s_noise
-            print(f"Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2: sample new noise")
-            print(f"eps: {eps[:1, :1, :1]}")
+            #print(f"Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2: sample new noise")
+            #print(f"eps: {eps[:1, :1, :1]}")
 
-            print(f"Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2: Add new noise to move from ti to t")
-            print(f"original x: {x[:1, :1, :1]}")
+            #Add new noise to move from ti to t
+            #print(f"Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2: Add new noise to move from ti to t")
+            #print(f"original x: {x[:1, :1, :1]}")
             x = x + eps * append_dims(sigma_hat**2 - sigma**2, x.ndim) ** 0.5
-            print(f"new x: {x[:1, :1, :1]}")
+            #print(f"new x: {x[:1, :1, :1]}")
         
+        #calculate denoised result
         denoised = self.denoise(x, denoiser, sigma_hat, cond, uc)
 
+        #Evaluate dx/dt at t
         d = to_d(x, sigma_hat, denoised)
-        print(f"Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2: Evaluate dx/dt at t")
-        print(f"d: {d[:1, :1, :1]}")
+        #print(f"Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2: Evaluate dx/dt at t")
+        #print(f"d: {d[:1, :1, :1]}")
         
+        #calculate dt
         dt = append_dims(next_sigma - sigma_hat, x.ndim)
-        print(f"Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2: calculate dt")
-        print(f"dt: {dt[:1, :1, :1]}")
+        #print(f"Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2: calculate dt")
+        #print(f"dt: {dt[:1, :1, :1]}")
 
+        # Take Euler step from ti to ti+ 
         euler_step = self.euler_step(x, d, dt)
 
-        print(f"Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2: Apply 2nd order correction unless σ goes to zero")
-        print(f"original x: {x[:1, :1, :1]}")
+        # Apply 2nd order correction unless σ goes to zero
+        #print(f"Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2: Apply 2nd order correction unless σ goes to zero")
+        #print(f"original x: {x[:1, :1, :1]}")
         x = self.possible_correction_step(
             euler_step, x, d, dt, next_sigma, denoiser, cond, uc
         )
-        print(f"new x: {x[:1, :1, :1]}")
+        #print(f"new x: {x[:1, :1, :1]}")
+
+        #modified code end
 
         return x
 
     def __call__(self, denoiser, x, cond, uc=None, num_steps=None):
+        #modified code start
+        #Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2
+
+        #prepare parameters for starting sampling loop, parameters includes x0, s_in, sigmas, num sigmas, condition, uncondition 
         x, s_in, sigmas, num_sigmas, cond, uc = self.prepare_sampling_loop(
             x, cond, uc, num_steps
         )
 
+        #EDMSampler sampling loop
         for i in self.get_sigma_gen(num_sigmas):
+            #calculate γ
             gamma = (
                 min(self.s_churn / (num_sigmas - 1), 2**0.5 - 1)
                 if self.s_tmin <= sigmas[i] <= self.s_tmax
                 else 0.0
             )
-            print(f"Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2: calculate γ")
-            print(f"s_churn: {self.s_churn}")
-            print(f"num_sigmas: {num_sigmas}")
-            print(f"gamma: {gamma}")
+            #print(f"Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2: calculate γ")
+            #print(f"s_churn: {self.s_churn}")
+            #print(f"num_sigmas: {num_sigmas}")
+            #print(f"gamma: {gamma}")
 
+            #EDMSampler sampling one step
             x = self.sampler_step(
                 s_in * sigmas[i],
                 s_in * sigmas[i + 1],
@@ -172,6 +214,7 @@ class EDMSampler(SingleStepDiffusionSampler):
                 uc,
                 gamma,
             )
+        #modified code end
         return x
 
 

@@ -28,6 +28,7 @@ from torchvision.transforms import ToTensor
 
 from torch.utils.data import DataLoader
 from pytorch_lightning import Trainer
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 
 
@@ -70,86 +71,98 @@ model, _ = load_model(
 
 
 #replace ConvXd module to LoraConvXd module
-add_lora_into_model(model.model.diffusion_model.middle_block, "model.model.diffusion_model.middle_block", "Conv1d", 0)
-add_lora_into_model(model.model.diffusion_model.middle_block, "model.model.diffusion_model.middle_block", "Conv2d", 0)
-add_lora_into_model(model.model.diffusion_model.middle_block, "model.model.diffusion_model.middle_block", "Conv3d", 0)
+for i in range(3):
+  model_name = "model.model.diffusion_model.input_blocks." + str(i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv1d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv2d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv3d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i)
+
+for i in range(4, 6):
+  model_name = "model.model.diffusion_model.input_blocks." + str(i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv1d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv2d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv3d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i)
+
+for i in range(7, 9):
+  model_name = "model.model.diffusion_model.input_blocks." + str(i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv1d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv2d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv3d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i)
+
+for i in range(10, 12):
+  model_name = "model.model.diffusion_model.input_blocks." + str(i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv1d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv2d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv3d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i)
 
 
 
-# Disable gradients for frozen layers
-for name, module in model.model.diffusion_model.time_embed.named_children():
-  for param in module.parameters():
-    param.requires_grad = False
+for i in range(2):
+  model_name = "model.model.diffusion_model.middle_block." + str(i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.middle_block[i], model_name, "Conv1d", 0, in_model_layer=12 + i, in_model_Unet_up_or_down_layer=12 + i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.middle_block[i], model_name, "Conv2d", 0, in_model_layer=12 + i, in_model_Unet_up_or_down_layer=12 + i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.middle_block[i], model_name, "Conv3d", 0, in_model_layer=12 + i, in_model_Unet_up_or_down_layer=12 + i)
 
-for name, module in model.model.diffusion_model.label_emb[0].named_children():
-  for param in module.parameters():
-    param.requires_grad = False
-
-for param in model.model.diffusion_model.input_blocks.parameters():
-  param.requires_grad = False
-
-for param in model.model.diffusion_model.output_blocks.parameters():
-  param.requires_grad = False
-
-for name, module in model.model.diffusion_model.out.named_children():
-  for param in module.parameters():
-    param.requires_grad = False
+for i in range(1):
+  model_name = "model.model.diffusion_model.middle_block." + str(i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.middle_block[2 - i], model_name, "Conv1d", 0, in_model_layer=12 + i, in_model_Unet_up_or_down_layer=12 - i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.middle_block[2 - i], model_name, "Conv2d", 0, in_model_layer=12 + i, in_model_Unet_up_or_down_layer=12 - i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.middle_block[2 - i], model_name, "Conv3d", 0, in_model_layer=12 + i, in_model_Unet_up_or_down_layer=12 - i)
 
 
 
-for param in model.model.diffusion_model.middle_block[0].in_layers[2].conv.parameters():
-  param.requires_grad = False
+for i in range(3):
+  model_name = "model.model.diffusion_model.output_blocks." + str(i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv1d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv2d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv3d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i)
 
-for param in model.model.diffusion_model.middle_block[0].emb_layers[1].parameters():
-  param.requires_grad = False
+for i in range(4, 6):
+  model_name = "model.model.diffusion_model.output_blocks." + str(i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv1d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv2d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv3d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i)
 
-for param in model.model.diffusion_model.middle_block[0].out_layers[3].conv.parameters():
-  param.requires_grad = False
+for i in range(7, 9):
+  model_name = "model.model.diffusion_model.output_blocks." + str(i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv1d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv2d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv3d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i)
 
-for param in model.model.diffusion_model.middle_block[0].time_stack.in_layers[2].conv.parameters():
-  param.requires_grad = False
-
-for param in model.model.diffusion_model.middle_block[0].time_stack.emb_layers[1].parameters():
-  param.requires_grad = False
-
-for param in model.model.diffusion_model.middle_block[0].time_stack.out_layers[3].conv.parameters():
-  param.requires_grad = False
-
-
-
-for name, module in model.model.diffusion_model.middle_block[1].named_children():
-  for param in module.parameters():
-    param.requires_grad = False
-
-    
-
-for param in model.model.diffusion_model.middle_block[2].in_layers[2].conv.parameters():
-  param.requires_grad = False
-
-for param in model.model.diffusion_model.middle_block[2].emb_layers[1].parameters():
-  param.requires_grad = False
-
-for param in model.model.diffusion_model.middle_block[2].out_layers[3].conv.parameters():
-  param.requires_grad = False
-
-for param in model.model.diffusion_model.middle_block[2].time_stack.in_layers[2].conv.parameters():
-  param.requires_grad = False
-
-for param in model.model.diffusion_model.middle_block[2].time_stack.emb_layers[1].parameters():
-  param.requires_grad = False
-
-for param in model.model.diffusion_model.middle_block[2].time_stack.out_layers[3].conv.parameters():
-  param.requires_grad = False
+for i in range(10, 12):
+  model_name = "model.model.diffusion_model.output_blocks." + str(i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv1d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv2d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv3d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i)
 
 
 
-# enable gradients for all lora layers
-enable_lora_train(model, "Lora", 0)
+#set frozen layer to requires_grad = False
+for name, param in model.model.diffusion_model.named_parameters():
+  if "lora" in name:
+    print(f'parameter name: {name}, param.is_leaf: {param.is_leaf}')
+  
+  else:
+    if param.is_leaf:
+      param.requires_grad = False
+
+
+
+#early stop callback
+class MyEarlyStopping(EarlyStopping):
+    def on_validation_end(self, trainer, pl_module):
+        pass
+
+    def on_train_epoch_end(self, trainer, pl_module):
+        if trainer.callback_metrics.get("early_stop_loss", None) is not None:
+            self.monitor = "early_stop_loss"
+            self._run_early_stopping_check(trainer)
 
 
 
 #train the model
-trainer = Trainer(max_epochs=2)
+#trainer = Trainer(max_epochs=2)
+trainer = Trainer(callbacks=[MyEarlyStopping(monitor="early_stop_loss", mode="min", patience=1)])
 trainer.fit(model, dataloader)
 
 
@@ -172,6 +185,7 @@ model_test, _ = load_model(
 
 
 load_lora(model_test, "/content/generative-models/lora_weight.pth")
+
 
 
 

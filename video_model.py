@@ -3,6 +3,8 @@ from typing import List, Optional, Union
 
 from einops import rearrange
 
+import torch #modified code start end
+
 from ...modules.diffusionmodules.openaimodel import *
 from ...modules.video_attention import SpatialVideoTransformer
 from ...modules.spacetime_attention import (
@@ -73,11 +75,14 @@ class VideoResBlock(ResBlock):
     ) -> th.Tensor:
         x = super().forward(x, emb)
 
-        print(f"res block for video diffusion model: rearrange x shape")
-        print(f"x.shape (b t) c h w: {x.shape:}")
+        #modified code start
+        #x: original input x, (b t) c h w
+        #print(f"res block for video diffusion model: rearrange x shape")
+        #print(f"x.shape (b t) c h w: {x.shape:}")
         x_mix = rearrange(x, "(b t) c h w -> b c t h w", t=num_video_frames)
         x = rearrange(x, "(b t) c h w -> b c t h w", t=num_video_frames)
-        print(f"rearranged shape b c t h w: {x.shape:}")
+        #x: rearranged x, b c t h w
+        #print(f"rearranged shape b c t h w: {x.shape:}")
 
         x = self.time_stack(
             x, rearrange(emb, "(b t) ... -> b t ...", t=num_video_frames)
@@ -86,8 +91,12 @@ class VideoResBlock(ResBlock):
             x_spatial=x_mix, x_temporal=x, image_only_indicator=image_only_indicator
         )
 
+        #x: rearranged x, b c t h w
         x = rearrange(x, "b c t h w -> (b t) c h w")
-        print(f"restored shape (b t) c h w: {x.shape:}")        
+        #x: restore input x, (b t) c h w
+        #print(f"restored shape (b t) c h w: {x.shape:}")        
+
+        #modified code end
 
         return x
 

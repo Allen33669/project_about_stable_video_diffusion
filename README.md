@@ -35,6 +35,25 @@
 <br>
 <ul>
 <blockquote>
+<h3>2.6.1: </h3>
+<blockquote>
+Stable Video Diffusion: A brief introduction to the paper and SVD source code: SVD LoRA ConvXd fine-tuning and simple lora analysis<br>
+project_about_stable_video_diffusion_2_6_1.ipynb:<br>
+    LoRA ConvXd class<br>
+    train with LoRA ConvXd using regularization skill: dropout, weight decay, and early Stopping<br>
+    different learning rate: lora down learning rate > lora up learning rate<br>
+    generate lora analysis samples:<br>
+      model layer<br>
+      model Unet layer<br>
+      model position<br>
+      current time step<br>
+      gradient input<br>
+      gradient output<br>
+    lora analysis:<br>
+      heatmap<br>
+      ols<br>
+</blockquote>
+<br>
 <h3>2.2.1: </h3>
 <blockquote>
 Stable Video Diffusion: A brief introduction to the paper and SVD source code: SVD LoRA fine-tuning<br>
@@ -100,6 +119,96 @@ project_about_stable_video_diffusion_0_1_0.ipynb<br>
 
 
 
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+2.6.1:
+Stable Video Diffusion: A brief introduction to the paper and SVD source code: SVD LoRA ConvXd fine-tuning and simple lora analysis (VideoUNet input blocks, middle block, and output blocks: Conv1d, Conv2d, Conv3d):
+  project_about_stable_video_diffusion_2_6_1.ipynb
+    LoRA ConvXd class
+    train with LoRA ConvXd using regularization skill: dropout, weight decay, and early Stopping
+    different learning rate: lora down learning rate > lora up learning rate
+    generate lora analysis samples:
+      model layer
+      model Unet layer
+      model position
+      current time step
+      gradient input
+      gradient output
+    lora analysis:
+      heatmap
+      ols
+
+
+
+2.2.1:
+Stable Video Diffusion: A brief introduction to the paper and SVD source code: SVD LoRA ConvXd fine-tuning (VideoUNet middle block: Conv1d, Conv2d, Conv3d):
+  project_about_stable_video_diffusion_2_2_1.ipynb
+    LoRA ConvXd class
+    train with LoRA ConvXd
+    save lora weight
+    load lora weight by update weight of the original layer of the base model
+
+
+
+2.0.1:
+Stable Video Diffusion: A brief introduction to the paper and SVD source code: SVD partial fine-tuning (VideoUNet middle block):
+  project_about_stable_video_diffusion_2_0_1.ipynb
+    prepare training dataset:
+      videos
+      conditions
+    training configuration:
+      learning_rate
+      num_video_frames
+      image_only_indicator
+      loss function config:
+        batch2model_keys: ["num_video_frames", "image_only_indicator"]
+    
+
+
+1.3.0:
+PEFT (Parameter-Efficient Fine-Tuning) and LoRA (Low-Rank Adaptation): A brief introduction to LoRA:
+  project_about_stable_video_diffusion_1_3_0.ipynb
+    LoRA application: Video generation
+
+
+
+1.2.0:
+PEFT (Parameter-Efficient Fine-Tuning) and LoRA (Low-Rank Adaptation): A brief introduction to LoRA:
+  project_about_stable_video_diffusion_1_2_0.ipynb
+    LoRA mixture of experts brief introduction
+    LoRA MoE
+
+
+
+1.1.0:
+PEFT (Parameter-Efficient Fine-Tuning) and LoRA (Low-Rank Adaptation): A brief introduction to LoRA:
+  project_about_stable_video_diffusion_1_1_0.ipynb
+    Multiple LoRA / Multi-task
+    LoRA composition
+    LoRA generalized framework
+
+
+
+1.0.0:
+PEFT (Parameter-Efficient Fine-Tuning) and LoRA (Low-Rank Adaptation): A brief introduction to LoRA:
+  project_about_stable_video_diffusion_1_0_0.ipynb
+    PEFT brief introduction and Why LoRA?
+    LoRA position / layer
+    LoRA rank
+    LoRA learning rate
+    LoRA architecture
+    REFERENCES
+
+
+
+0.1.0:
+A brief introduction to the paper and SVD source code:
+  project_about_stable_video_diffusion_0_1_0.ipynb
+
+print information in inference process
+slight adjust sampling process
 
 
 

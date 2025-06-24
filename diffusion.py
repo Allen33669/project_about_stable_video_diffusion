@@ -39,17 +39,20 @@ class DiffusionEngine(pl.LightningModule):
         no_cond_log: bool = False,
         compile_model: bool = False,
         en_and_decode_n_samples_a_time: Optional[int] = None,
-        learning_rate: Optional[float] = None, 
-        num_video_frames: Optional[int] = None, 
-        image_only_indicator: Optional[int] = 0, 
+        learning_rate: Optional[float] = None, #modified code start end
+        num_video_frames: Optional[int] = None, #modified code start end
+        image_only_indicator: Optional[int] = 0, #modified code start end
     ):
         super().__init__()
-        
+        #modified code start
         self.learning_rate = learning_rate 
         self.num_video_frames = num_video_frames 
         self.image_only_indicator = image_only_indicator 
         self.track_gradients_print_number = 0 #the accumulated number of track_gradients print information
+
+        # Important: This property activates manual optimization.
         self.automatic_optimization = False
+        #modified code end
 
         self.log_keys = log_keys
         self.input_key = input_key
@@ -173,6 +176,7 @@ class DiffusionEngine(pl.LightningModule):
         loss, loss_dict = self(x, batch)
         return loss, loss_dict
 
+    #modified code start
     def track_gradients(self, model, depth: int, depth_max: int = 20, print_number_max: int = 5):
         if depth >= depth_max:
           return
@@ -194,11 +198,14 @@ class DiffusionEngine(pl.LightningModule):
                       self.track_gradients_print_number += 1
 
             self.track_gradients(module, depth)
+    #modified code end
 
     def training_step(self, batch, batch_idx):
-        batch["num_video_frames"] = self.num_video_frames 
-        batch["image_only_indicator"] = torch.tensor(self.image_only_indicator, device="cuda") 
+        batch["num_video_frames"] = self.num_video_frames #modified code start end
+        batch["image_only_indicator"] = torch.tensor(self.image_only_indicator, device="cuda") #modified code start end
 
+        #modified code start
+        #update weight
         opt = self.optimizers()
 
         print("-" * 50)
@@ -207,13 +214,20 @@ class DiffusionEngine(pl.LightningModule):
         opt.zero_grad()
         loss, loss_dict = self.shared_step(batch)
 
+        #inspect loss
         print(f'DiffusionEngine > training_step > loss: {loss}')
+        self.log("early_stop_loss", loss)
+        #print(f'DiffusionEngine > training_step > loss.is_leaf: {loss.is_leaf}')
+        #print(f'DiffusionEngine > training_step > loss.requires_grad: {loss.requires_grad}')
+        #loss.requires_grad = True
+        #print(f'DiffusionEngine > training_step > loss.requires_grad: {loss.requires_grad}')
 
         self.manual_backward(loss)
         opt.step()
  
-        self.track_gradients_print_number = 0
-        self.track_gradients(self, 0)
+        #self.track_gradients_print_number = 0
+        #self.track_gradients(self, 0)
+        #modified code end
 
         self.log_dict(
             loss_dict, prog_bar=True, logger=True, on_step=True, on_epoch=False
@@ -233,6 +247,8 @@ class DiffusionEngine(pl.LightningModule):
             self.log(
                 "lr_abs", lr, prog_bar=True, logger=True, on_step=True, on_epoch=False
             )
+
+        #return loss #modified code start end
 
     def on_train_start(self, *args, **kwargs):
         if self.sampler is None or self.loss_fn is None:
@@ -264,14 +280,25 @@ class DiffusionEngine(pl.LightningModule):
 
     def configure_optimizers(self):
         lr = self.learning_rate
+        lora_down_lr = 2**4 * lr
 
+        #modified code start
         params = list(self.model.parameters())
+        lora_down_params = [p for name, p in self.model.named_parameters() if 'lora_down' in name]
+        lora_up_params = [p for name, p in self.model.named_parameters() if 'lora_up' in name]
+       
 
-        opt = torch.optim.AdamW(params, lr=lr, weight_decay=1e-5)
+        #opt = torch.optim.AdamW(params, lr=lr, weight_decay=1e-4)
+        opt = torch.optim.AdamW([
+                                 {'params': lora_down_params, 'lr': lora_down_lr}, 
+                                 {'params': lora_up_params}, 
+                                ], lr=lr, weight_decay=1e-4) 
+        #modified code end
 
         for embedder in self.conditioner.embedders:
             if embedder.is_trainable:
                 params = params + list(embedder.parameters())
+        #opt = self.instantiate_optimizer_from_config(params, lr, self.optimizer_config) #modified code start end
         if self.scheduler_config is not None:
             scheduler = instantiate_from_config(self.scheduler_config)
             print("Setting up LambdaLR scheduler...")
