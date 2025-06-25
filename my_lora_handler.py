@@ -14,6 +14,8 @@ params:
 -module_name: name of target module be searched
 -target_module: target class be replaced in the target module
 -target_module_name: name of target class be replaced in the target module
+-r: lora rank
+-scale: lora scale
 return: replaced module
 """
 def replace_lora_module(
@@ -106,7 +108,7 @@ def add_lora_into_model(
 
 
 """
-description: 
+description: module backward hook for generate lora statistics samples and store the statistics samples
 params:
 return: 
 """
@@ -147,12 +149,16 @@ def save_statistic_sample_backward_hook(module, grad_input, grad_output):
 
 
 """
-description: replace module of base model by lora module, copy original weight of module into lora module
+description: replace module of base model by lora module, copy original weight of module into lora module with statistics info
 params:
 -module: target module be searched
 -module_name: name of target module be searched
 -target_module: target class be replaced in the target module
 -target_module_name: name of target class be replaced in the target module
+-r: lora rank
+-scale: lora scale
+-in_model_layer: statistics info in lora module
+-in_model_Unet_up_or_down_layer: statistics info in lora module
 return: replaced module
 """
 def replace_lora_module_with_statistic_info(
@@ -231,13 +237,15 @@ def replace_lora_module_with_statistic_info(
 
 
 """
-description: add lora into base model, replace module of base model by lora module
+description: add lora into base model, replace module of base model by lora module with statistics info
 params:
 -model: target model be searched
 -model_name: name of target model be searched
 -target: target class name be searched in the target module like Conv2d
 -depth: current depth layer from start point
 -depth_max: max depth layer from start point
+-in_model_layer: statistics info in lora module
+-in_model_Unet_up_or_down_layer: statistics info in lora module
 """
 def add_lora_into_model_with_statistic_info(
   model,
