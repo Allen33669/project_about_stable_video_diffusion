@@ -102,12 +102,15 @@ class VideoTransformerBlock(nn.Module):
     def forward(
         self, x: torch.Tensor, context: torch.Tensor = None, timesteps: int = None
     ) -> torch.Tensor:
+
+
         if self.checkpoint:
             return checkpoint(self._forward, x, context, timesteps)
         else:
             return self._forward(x, context, timesteps=timesteps)
 
     def _forward(self, x, context=None, timesteps=None):
+
         assert self.timesteps or timesteps
         assert not (self.timesteps and timesteps) or self.timesteps == timesteps
         timesteps = self.timesteps or timesteps
@@ -236,10 +239,6 @@ class SpatialVideoTransformer(SpatialTransformer):
         timesteps: Optional[int] = None,
         image_only_indicator: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
-        print(f"transformer for video: inputs")
-        print(f"x: {x[:1, :1, :1]}")
-        print(f"conditions: {context[:1, :1, :1]}")
-        print(f"time step: {timesteps}")
 
         _, _, h, w = x.shape
         x_in = x
@@ -247,6 +246,7 @@ class SpatialVideoTransformer(SpatialTransformer):
         if exists(context):
             spatial_context = context
 
+        #modified code start
         if self.use_spatial_context:
             assert (
                 context.ndim == 3
@@ -258,17 +258,30 @@ class SpatialVideoTransformer(SpatialTransformer):
                 time_context_first_timestep, "b ... -> (b n) ...", n=h * w
             )
         elif time_context is not None and not self.use_spatial_context:
+            assert (
+                time_context.ndim == 3
+            ), f"n dims of temporal context should be 3 but are {time_context.ndim}"
+
+            time_context_first_timestep = time_context[::timesteps]
+            time_context = repeat(
+                time_context_first_timestep, "b ... -> (b n) ...", n=h * w
+            )
+        """
+        elif time_context is not None and not self.use_spatial_context:
             time_context = repeat(time_context, "b ... -> (b n) ...", n=h * w)
             if time_context.ndim == 2:
                 time_context = rearrange(time_context, "b c -> b 1 c")
+        """
+        #modified code end
 
         x = self.norm(x)
         if not self.use_linear:
             x = self.proj_in(x)
-        print(f"transformer for video: reshape x")
-        print(f"x.shape b c h w: {x.shape}")
+        #modified code start
+        #x: before rearrange b c h w
         x = rearrange(x, "b c h w -> b (h w) c")
-        print(f"reshape b (h w) c: {x.shape}")
+        #x: after rearrange b (h w) c
+        #modified code end
 
         if self.use_linear:
             x = self.proj_in(x)
@@ -277,19 +290,20 @@ class SpatialVideoTransformer(SpatialTransformer):
         num_frames = repeat(num_frames, "t -> b t", b=x.shape[0] // timesteps)
         num_frames = rearrange(num_frames, "b t -> (b t)")
 
+        #modified code start
         t_emb = timestep_embedding(
             num_frames,
             self.in_channels,
             repeat_only=False,
             max_period=self.max_time_embed_period,
         )
-        print(f"transformer for video: embedded time step")
-        print(f"timesteps: {timesteps}")
-        print(f"embedded time step: {t_emb[:1]}")
+        #t_emb: embedded time step
 
         emb = self.time_pos_embed(t_emb)
         emb = emb[:, None, :]
-        print(f"embedded time step: {emb[:1, :1, :1]}")
+        #emb: embedded time step
+
+        #modified code end
 
         for it_, (block, mix_block) in enumerate(
             zip(self.transformer_blocks, self.time_stack)
@@ -299,19 +313,18 @@ class SpatialVideoTransformer(SpatialTransformer):
                 context=spatial_context,
             )
             
+            #modified code start
             x_mix = x
+            #x_mix: x
 
             x_mix = x_mix + emb
-            print(f"transformer for video: fuse x and embedded time step by x = x + embedded time step") 
-            print(f"x: {x[:1, :1, :1]}")
-            print(f"embedded time step: {emb[:1, :1, :1]}")
-            print(f"fuse x, emb: {x_mix[:1, :1, :1]}")
+            #x_mix: fuse x, emb
+            #modified code end
 
-            print(f"transformer for video: fuse x and conditions by attention, Q: x, K and V: conditions")
-            print(f"x: {x_mix[:1, :1, :1]}") 
-            print(f"conditions: {time_context[:1, :1, :1]}")
+            #modified code start
+            #x_mix: Q, context: K, V
             x_mix = mix_block(x_mix, context=time_context, timesteps=timesteps)
-            print(f"fuse x, conditions: {x_mix[:1, :1, :1]}") 
+            #modified code end
 
             x = self.time_mixer(
                 x_spatial=x,
@@ -321,10 +334,11 @@ class SpatialVideoTransformer(SpatialTransformer):
         if self.use_linear:
             x = self.proj_out(x)
 
-        print(f"transformer for video: restore x shape b c h w")
-        print(f"reshaped x shape b (h w) c: {x.shape}")
+        #modified code start
+        #x: rearranged b (h w) c
         x = rearrange(x, "b (h w) c -> b c h w", h=h, w=w)
-        print(f"restored x shape b c h w: {x.shape}")
+        #x: restore rearrange b c h w
+        #modified code end
 
         if not self.use_linear:
             x = self.proj_out(x)

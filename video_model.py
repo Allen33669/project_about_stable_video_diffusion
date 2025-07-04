@@ -16,6 +16,17 @@ from ...util import default
 from .util import AlphaBlender # , LegacyAlphaBlenderWithBug, get_alpha
 
 
+
+#modified code start
+from torch.utils.tensorboard import SummaryWriter
+
+
+
+from my_common_variable import *
+#modified code end
+
+
+
 class VideoResBlock(ResBlock):
     def __init__(
         self,
@@ -72,17 +83,13 @@ class VideoResBlock(ResBlock):
         emb: th.Tensor,
         num_video_frames: int,
         image_only_indicator: Optional[th.Tensor] = None,
-    ) -> th.Tensor:
+    ) -> th.Tensor:        
+
         x = super().forward(x, emb)
 
-        #modified code start
-        #x: original input x, (b t) c h w
-        #print(f"res block for video diffusion model: rearrange x shape")
-        #print(f"x.shape (b t) c h w: {x.shape:}")
         x_mix = rearrange(x, "(b t) c h w -> b c t h w", t=num_video_frames)
         x = rearrange(x, "(b t) c h w -> b c t h w", t=num_video_frames)
-        #x: rearranged x, b c t h w
-        #print(f"rearranged shape b c t h w: {x.shape:}")
+
 
         x = self.time_stack(
             x, rearrange(emb, "(b t) ... -> b t ...", t=num_video_frames)
@@ -91,12 +98,7 @@ class VideoResBlock(ResBlock):
             x_spatial=x_mix, x_temporal=x, image_only_indicator=image_only_indicator
         )
 
-        #x: rearranged x, b c t h w
         x = rearrange(x, "b c t h w -> (b t) c h w")
-        #x: restore input x, (b t) c h w
-        #print(f"restored shape (b t) c h w: {x.shape:}")        
-
-        #modified code end
 
         return x
 
@@ -138,6 +140,11 @@ class VideoUNet(nn.Module):
     ):
         super().__init__()
         assert context_dim is not None
+
+        #modified code start
+        self.tensor_board_writer = SummaryWriter(tensor_board_folder)
+        self.batch_step = -1
+        #modified code end
 
         if num_heads_upsample == -1:
             num_heads_upsample = num_heads
@@ -469,6 +476,7 @@ class VideoUNet(nn.Module):
         num_video_frames: Optional[int] = None,
         image_only_indicator: Optional[th.Tensor] = None,
     ):
+
         assert (y is not None) == (
             self.num_classes is not None
         ), "must specify y if and only if the model is class-conditional -> no, relax this TODO"
@@ -481,6 +489,7 @@ class VideoUNet(nn.Module):
             emb = emb + self.label_emb(y)
 
         h = x
+
         for module in self.input_blocks:
             h = module(
                 h,
@@ -491,6 +500,7 @@ class VideoUNet(nn.Module):
                 num_video_frames=num_video_frames,
             )
             hs.append(h)
+
         h = self.middle_block(
             h,
             emb,
@@ -499,6 +509,7 @@ class VideoUNet(nn.Module):
             time_context=time_context,
             num_video_frames=num_video_frames,
         )
+
         for module in self.output_blocks:
             h = th.cat([h, hs.pop()], dim=1)
             h = module(
@@ -509,9 +520,20 @@ class VideoUNet(nn.Module):
                 time_context=time_context,
                 num_video_frames=num_video_frames,
             )
-        h = h.type(x.dtype)
-        return self.out(h)
 
+        h = h.type(x.dtype)
+
+        #modified code start
+        h = self.out(h)
+
+        if isinstance(h, torch.Tensor):
+          self.batch_step += 1
+          for i in range(h.shape[1]):
+            self.tensor_board_writer.add_images(f'channel:{i}', h[:, i:i+1, :, :], global_step=self.batch_step, dataformats='NCHW')
+
+        #return self.out(h)
+        return h
+        #modified code end
 
 class PostHocAttentionBlockWithTimeMixing(AttentionBlock):
     def __init__(

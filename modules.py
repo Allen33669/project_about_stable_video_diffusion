@@ -72,8 +72,20 @@ class GeneralConditioner(nn.Module):
     OUTPUT_DIM2KEYS = {2: "vector", 3: "crossattn", 4: "concat"} # , 5: "concat"}
     KEY2CATDIM = {"vector": 1, "crossattn": 2, "concat": 1, "cond_view": 1, "cond_motion": 1}
 
+    TIMECONTEXTKEY = "crossattn_time_context" #modified code start end
+    
+
     def __init__(self, emb_models: Union[List, ListConfig]):
         super().__init__()
+
+        #modified code start
+        model_name = "ViT-H-14"
+        checkpoint = "laion2b_s32b_b79k"
+        self.embedder_text, _, _ = open_clip.create_model_and_transforms(model_name, pretrained=checkpoint)
+        self.tokenizer_text = open_clip.get_tokenizer(model_name)
+        self.embedder_text.input_key = "text"
+        #modified code end
+
         embedders = []
         for n, embconfig in enumerate(emb_models):
             embedder = instantiate_from_config(embconfig)
@@ -120,11 +132,6 @@ class GeneralConditioner(nn.Module):
     def forward(
         self, batch: Dict, force_zero_embeddings: Optional[List] = None
     ) -> Dict:
-        for key, value in batch.items():
-          if isinstance(value, torch.Tensor):
-            print(f"condition: {key}, condition value: {value[:1]}")
-          else:
-            print(f"condition: {key}, condition value: {value}")
 
         output = dict()
         if force_zero_embeddings is None:
@@ -133,19 +140,22 @@ class GeneralConditioner(nn.Module):
             embedding_context = nullcontext if embedder.is_trainable else torch.no_grad
             with embedding_context():
                 if hasattr(embedder, "input_key") and (embedder.input_key is not None):
-                    print(f"current embedder: {embedder.input_key}")
-                    print(f"current condition value: {batch[embedder.input_key][:1]}")
+                    #modified code start
+                    #embedder.input_key: which embedder is used
+                    #batch[embedder.input_key]: the original input condition
 
                     if embedder.legacy_ucg_val is not None:
                         batch = self.possibly_get_ucg_val(embedder, batch)
                     emb_out = embedder(batch[embedder.input_key])
-                    print(f"embedded condition value: {emb_out[:1]}")
+                    #emb_out: the embedded condition
 
                 elif hasattr(embedder, "input_keys"):
-                    print(f"current embedder: {embedder.input_keys}")
+                    #embedder.input_key: which embedder is used
+                    #batch[embedder.input_key]: the original input condition
 
                     emb_out = embedder(*[batch[k] for k in embedder.input_keys])
-                    print(f"embedded condition value: {emb_out[:1, :1, :1]}")
+                    #emb_out: the embedded condition
+                    #modified code end
 
             assert isinstance(
                 emb_out, (torch.Tensor, list, tuple)
@@ -180,6 +190,14 @@ class GeneralConditioner(nn.Module):
                     )
                 else:
                     output[out_key] = emb
+                
+        #modified code start
+        tokenized_text = self.tokenizer_text(batch[self.embedder_text.input_key]).to('cuda')
+        emb_time_context = self.embedder_text.encode_text(tokenized_text)
+        emb_time_context = emb_time_context.unsqueeze(1)
+        output[self.TIMECONTEXTKEY] = emb_time_context
+        #modified code end 
+
         return output
 
     def get_unconditional_conditioning(

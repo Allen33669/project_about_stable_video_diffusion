@@ -46,7 +46,11 @@ print("Current directory:", os.getcwd())
 
 
 
-dataset = SVDDataset(dataset_file, frames_folder)
+text_file_path = "/content/generative-models/dataset/frames/text_appearence.txt"
+dataset = SVDDataset(frames_folder=frames_folder, text_file_path=text_file_path, unordered=True)
+
+#text_file_path = "/content/generative-models/dataset/frames/text_motion.txt"
+#dataset = SVDDataset(frames_folder=frames_folder, text_file_path=text_file_path, unordered=False)
 
 #batch size can be multiples of number of frames in a video
 dataloader = DataLoader(dataset, batch_size=12, shuffle=False)
@@ -71,6 +75,7 @@ model, _ = load_model(
 
 
 #replace ConvXd module to LoraConvXd module
+
 for i in range(3):
   model_name = "model.model.diffusion_model.input_blocks." + str(i)
   add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv1d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i)
@@ -163,13 +168,14 @@ class MyEarlyStopping(EarlyStopping):
 #train the model
 #trainer = Trainer(max_epochs=2)
 trainer = Trainer(callbacks=[MyEarlyStopping(monitor="early_stop_loss", mode="min", patience=1)])
+#trainer = Trainer(max_epochs=2, callbacks=[MyEarlyStopping(monitor="early_stop_loss", mode="min", patience=1)])
 trainer.fit(model, dataloader)
 
 
 
 #save lora weight into .pth
 lora_weight = []
-save_lora(model, "/content/generative-models/lora_weight.pth", "model", lora_weight)
+save_lora(model, lora_weight_file, "model", lora_weight)
 
 
 
@@ -184,7 +190,7 @@ model_test, _ = load_model(
 
 
 
-load_lora(model_test, "/content/generative-models/lora_weight.pth")
+load_lora(model_test, lora_weight_file)
 
 
 

@@ -69,11 +69,6 @@ class StandardDiffusionLoss(nn.Module):
         }
         sigmas = self.sigma_sampler(input.shape[0]).to(input)
 
-        #modified code start
-        print(f'StandardDiffusionLoss > _forward > sigmas: {sigmas}')
-        #torch.save({"current_timestep": sigmas}, "/content/generative-models/current_timestep.tar")
-        #modified code end
-
         noise = torch.randn_like(input)
         if self.offset_noise_level > 0.0:
             offset_shape = (

@@ -3,6 +3,7 @@ from einops import rearrange
 
 
 
+from my_common_variable import *
 from my_lora import *
 
 
@@ -94,7 +95,6 @@ def add_lora_into_model(
   depth: int, 
   depth_max: int = 20, 
 ):
-  #print(f'add_lora_into_model > depth: {depth}')
   if depth >= depth_max:
     return
 
@@ -113,12 +113,13 @@ params:
 return: 
 """
 def save_statistic_sample_backward_hook(module, grad_input, grad_output):
-  current_timestep = torch.load("/content/generative-models/current_timestep.tar")['current_timestep']
-  #print(f'save_statistic_sample_backward_hook > current_timestep: {current_timestep}')
-  #print(f'save_statistic_sample_backward_hook > module.in_model_layer: {module.in_model_layer}')
+  current_timestep = torch.load(current_timestep_file)['current_timestep']
 
-  statistic_sample_backward_list = torch.load("/content/generative-models/statistic_sample_backward.tar")
-  #print(f'save_statistic_sample_backward_hook > len(grad_input): {len(grad_input)}')
+  current_batch_step = torch.load(current_batch_step_file)['current_batch_step']
+
+  current_epoch_step = torch.load(current_epoch_step_file)['current_epoch_step']
+
+  statistic_sample_backward_list = torch.load(statistic_sample_backward_file)
   
   grad_input_mean_abs = []
   for i, tensor in enumerate(grad_input):
@@ -128,6 +129,22 @@ def save_statistic_sample_backward_hook(module, grad_input, grad_output):
       grad_input_mean_abs.append(None)
 
   grad_output_mean_abs = torch.mean(torch.abs(grad_output[0]))
+
+  grad_input_mean_square = []
+  for i, tensor in enumerate(grad_input):
+    if tensor is not None:
+      grad_input_mean_square.append(torch.mean(torch.square(tensor)))
+    else:
+      grad_input_mean_square.append(None)
+
+  grad_output_mean_square = torch.mean(torch.square(grad_output[0]))
+
+  lora_down_weight_mean_abs = module.lora_down.weight.abs().mean().item()
+  lora_down_weight_mean_square = (module.lora_down.weight ** 2).mean().item()
+
+  lora_up_weight_mean_abs = module.lora_up.weight.abs().mean().item()
+  lora_up_weight_mean_square = (module.lora_up.weight ** 2).mean().item()
+
   statistic_sample_backward_new = {
                                    "in_model_layer": module.in_model_layer, 
                                    "in_model_toal_layer": module.in_model_toal_layer, 
@@ -136,15 +153,20 @@ def save_statistic_sample_backward_hook(module, grad_input, grad_output):
                                    "in_model_replaced_module": module.in_model_replaced_module, 
                                    "in_model_task": module.in_model_task, 
                                    "current_timestep": current_timestep, 
+                                   "current_batch_step" : current_batch_step, 
+                                   "current_epoch_step": current_epoch_step, 
                                    "grad_input_mean_abs": grad_input_mean_abs, 
                                    "grad_output_mean_abs": grad_output_mean_abs, 
+                                   "grad_input_mean_square": grad_input_mean_square, 
+                                   "grad_output_mean_square": grad_output_mean_square,
+                                   "lora_down_weight_mean_abs": lora_down_weight_mean_abs,
+                                   "lora_down_weight_mean_square": lora_down_weight_mean_square,
+                                   "lora_up_weight_mean_abs": lora_up_weight_mean_abs,
+                                   "lora_up_weight_mean_square": lora_up_weight_mean_square, 
                                   }
   statistic_sample_backward_list.append(statistic_sample_backward_new)
 
-  #print(f'save_statistic_sample_backward_hook > len(statistic_sample_backward_list): {len(statistic_sample_backward_list)}')
-  #print(f'save_statistic_sample_backward_hook > statistic_sample_backward_list[len(statistic_sample_backward_list) - 1]: {statistic_sample_backward_list[len(statistic_sample_backward_list) - 1]}')
-
-  torch.save(statistic_sample_backward_list, "/content/generative-models/statistic_sample_backward.tar")
+  torch.save(statistic_sample_backward_list, statistic_sample_backward_file)
 
 
 
@@ -256,7 +278,6 @@ def add_lora_into_model_with_statistic_info(
   in_model_layer: int = None, 
   in_model_Unet_up_or_down_layer:int = None, 
 ):
-  #print(f'add_lora_into_model_with_statistic_info > depth: {depth}')
   if depth >= depth_max:
     return
 
@@ -293,11 +314,8 @@ def find_lora_weight(
     current_module_name = model_name + "." + name
 
     if "Lora" in module.__class__.__name__:
-      #print(f'find_lora_weight > depth: {depth}')
       print(f'find_lora_weight > module_name: {current_module_name}')
       print(f'find_lora_weight > class_name: {module.__class__.__name__}')
-      #print(f'find_lora_weight > lora_down_weight.shape: {module.lora_down.weight.data.shape}')
-      #print(f'find_lora_weight > lora_up_weight.shape: {module.lora_up.weight.data.shape}')
       lora_dict = {
                    "module_name": current_module_name, 
                    "class_name": module.__class__.__name__, 
@@ -344,9 +362,6 @@ def update_lora_weight_direct(
   lora_down_weight_x = lora_x["lora_down_weight"]
   lora_up_weight_x = lora_x["lora_up_weight"]
   weight_x = module_x.weight.data
-  #print(f'update_lora_weight_direct > lora_down_weight_x.shape: {lora_down_weight_x.shape}')
-  #print(f'update_lora_weight_direct > lora_up_weight_x.shape: {lora_up_weight_x.shape}')
-  #print(f'update_lora_weight_direct > weight_x.shape: {weight_x.shape}')
 
   #calculate update lora weight by lora down weight and lora up weight
   if lora_x["class_name"] == "LoraConv1d":
@@ -367,12 +382,6 @@ def update_lora_weight_direct(
     lora_weight_x_rearrange = torch.matmul(lora_up_weight_x_rearrange, lora_down_weight_x_rearrange)
     lora_weight_x = rearrange(lora_weight_x_rearrange, 'd h w o_c i_c -> o_c i_c d h w').to("cuda")
     update_weight_x = weight_x + lora_weight_x
-
-  #print(f'update_lora_weight_direct > lora_down_weight_x_rearrange.shape: {lora_down_weight_x_rearrange.shape}')
-  #print(f'update_lora_weight_direct > lora_up_weight_x_rearrange.shape: {lora_up_weight_x_rearrange.shape}')
-  #print(f'update_lora_weight_direct > lora_weight_x_rearrange.shape: {lora_weight_x_rearrange.shape}')
-  #print(f'update_lora_weight_direct > lora_weight_x.shape: {lora_weight_x.shape}')
-  #print(f'update_lora_weight_direct > update_weight_x.shape: {update_weight_x.shape}')
 
   #update module weight by lora weight
   module_x.weight.data = update_weight_x
@@ -398,8 +407,6 @@ def load_lora(
   for lora in lora_weight:
     print(f'load_lora > module_name: {lora["module_name"]}')
     print(f'load_lora > class_name: {lora["class_name"]}')
-    #print(f'load_lora > lora_down_weight.shape: {lora["lora_down_weight"].shape}')
-    #print(f'load_lora > lora_up_weight.shape: {lora["lora_up_weight"].shape}')
     
     module_name_list = lora["module_name"].split(".")
 
@@ -433,7 +440,6 @@ def enable_lora_train(
 
   for name, module in model.named_children():
     if key_word in module.__class__.__name__:
-      print(f'enable_lora_train > depth: {depth}')
       print(f'enable_lora_train > module_name: {name}')
       print(f'enable_lora_train > module.__class__.__name__: {module.__class__.__name__}')
 
@@ -466,7 +472,6 @@ def disable_lora_conv_train(
 
   for name, module in model.named_children():
     if key_word in module.__class__.__name__:
-      print(f'disable_lora_conv_train > depth: {depth}')
       print(f'disable_lora_conv_train > module_name: {name}')
       print(f'disable_lora_conv_train > module.__class__.__name__: {module.__class__.__name__}')
 

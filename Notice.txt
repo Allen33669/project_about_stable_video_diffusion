@@ -3,10 +3,35 @@ This Stability AI Model is licensed under the Stability AI Community License, Co
 Powered by Stability AI
 
 Derivative Work:
-print information
-slightly adjust sampling process
-LoRA ConvXd
-train with LoRA ConvXd using regularization skill: dropout, weight decay, and early Stopping
-different learning rate: lora down learning rate > lora up learning rate
-generate lora analysis samples
-lora analysis
+      dataset: for unordered appearence dataset and ordered motion dataset
+      model:
+        text condition: add text condition as time context
+        LoRA:
+          LoRA ConvXd class
+          train with LoRA ConvXd
+          save lora weight
+          load lora weight by update weight of the original layer of the base model
+      optimizer:
+        different learning rate: lora down learning rate > lora up learning rate
+      regularization:
+        dropout
+        weight decay
+        early stopping
+      tensor board:
+        train batch loss
+        train epoch loss
+        latent image output with channels
+      generate lora analysis samples
+        model layer
+        model Unet layer
+        model position
+        current time step
+        current_batch_step
+        current_epoch_step
+        gradient input
+        gradient output
+        lora_down_weight
+        lora_up_weight
+      lora analysis:
+        heatmap
+        ols

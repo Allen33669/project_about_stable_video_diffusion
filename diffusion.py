@@ -17,6 +17,16 @@ from ..util import (default, disabled_train, get_obj_from_str,
 
 
 
+#modified code start
+from torch.utils.tensorboard import SummaryWriter
+
+
+
+from my_common_variable import *
+#modified code end
+
+
+
 class DiffusionEngine(pl.LightningModule):
     def __init__(
         self,
@@ -48,10 +58,13 @@ class DiffusionEngine(pl.LightningModule):
         self.learning_rate = learning_rate 
         self.num_video_frames = num_video_frames 
         self.image_only_indicator = image_only_indicator 
-        self.track_gradients_print_number = 0 #the accumulated number of track_gradients print information
 
         # Important: This property activates manual optimization.
         self.automatic_optimization = False
+        self.tensor_board_writer = SummaryWriter(tensor_board_folder)
+        self.total_batch_loss_in_a_epoch = 0
+        self.batch_step = -1
+        self.epoch_step = -1
         #modified code end
 
         self.log_keys = log_keys
@@ -176,35 +189,23 @@ class DiffusionEngine(pl.LightningModule):
         loss, loss_dict = self(x, batch)
         return loss, loss_dict
 
-    #modified code start
-    def track_gradients(self, model, depth: int, depth_max: int = 20, print_number_max: int = 5):
-        if depth >= depth_max:
-          return
-
-        if self.track_gradients_print_number >= print_number_max:
-          return
-
-        depth += 1
- 
-        for module_name, module in model.named_modules():
-            for param_name, param in module.named_parameters():
-                if param.requires_grad == True:
-                  if (param.grad is not None) and (param.grad.norm().item() > 0):
-                    if param_name == "lora_up.weight" or param_name == "lora_down.weight":
-                      print(f"-" * 50)
-                      print(f"DiffusionEngine > track_gradients > depth: {depth}")
-                      print(f"DiffusionEngine > track_gradients > Module: {module_name}, Param: {param_name}, requires_grad={param.requires_grad}, is_leaf: {param.is_leaf}, param.grad_fn: {param.grad_fn}")
-                      print(f"DiffusionEngine > track_gradients > param.grad.norm().item(): {param.grad.norm().item()}")
-                      self.track_gradients_print_number += 1
-
-            self.track_gradients(module, depth)
-    #modified code end
-
     def training_step(self, batch, batch_idx):
+        print(f'DiffusionEngine > training_step > type(batch): {type(batch)}')
+        for key, value in batch.items():
+          print(f'DiffusionEngine > training_step > batch > key: {key}')
+          print(f'DiffusionEngine > training_step > batch > type(value): {type(value)}')
+          if isinstance(value, torch.Tensor):
+            print(f'DiffusionEngine > training_step > batch > value.shape: {value.shape}')
+          else:
+            print(f'DiffusionEngine > training_step > batch > value: {value}')
+
         batch["num_video_frames"] = self.num_video_frames #modified code start end
         batch["image_only_indicator"] = torch.tensor(self.image_only_indicator, device="cuda") #modified code start end
 
         #modified code start
+        self.batch_step += 1
+        torch.save({"current_batch_step": self.batch_step}, current_batch_step_file)
+
         #update weight
         opt = self.optimizers()
 
@@ -217,16 +218,12 @@ class DiffusionEngine(pl.LightningModule):
         #inspect loss
         print(f'DiffusionEngine > training_step > loss: {loss}')
         self.log("early_stop_loss", loss)
-        #print(f'DiffusionEngine > training_step > loss.is_leaf: {loss.is_leaf}')
-        #print(f'DiffusionEngine > training_step > loss.requires_grad: {loss.requires_grad}')
-        #loss.requires_grad = True
-        #print(f'DiffusionEngine > training_step > loss.requires_grad: {loss.requires_grad}')
+        self.tensor_board_writer.add_scalar('train_batch_loss', loss, global_step=self.batch_step)
+        self.total_batch_loss_in_a_epoch += loss
 
         self.manual_backward(loss)
         opt.step()
  
-        #self.track_gradients_print_number = 0
-        #self.track_gradients(self, 0)
         #modified code end
 
         self.log_dict(
@@ -257,6 +254,18 @@ class DiffusionEngine(pl.LightningModule):
     def on_train_batch_end(self, *args, **kwargs):
         if self.use_ema:
             self.model_ema(self.model)
+
+#modified code start
+    def on_train_epoch_start(self):
+        self.epoch_step += 1
+        torch.save({"current_epoch_step": self.epoch_step}, current_epoch_step_file)
+#modified code end 
+
+#modified code start
+    def on_train_epoch_end(self):
+        self.tensor_board_writer.add_scalar('train_epoch_total_batch_loss', self.total_batch_loss_in_a_epoch, global_step=self.epoch_step)
+        self.total_batch_loss_in_a_epoch = 0
+#modified code end        
 
     @contextmanager
     def ema_scope(self, context=None):

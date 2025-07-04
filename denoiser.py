@@ -30,7 +30,6 @@ class Denoiser(nn.Module):
     ) -> torch.Tensor:
 
         #modified code start
-        print(f'Denoiser > forward > sigma: {sigma}')
         torch.save({"current_timestep": sigma}, "/content/generative-models/current_timestep.tar")
         #modified code end
 
@@ -41,20 +40,11 @@ class Denoiser(nn.Module):
         #modified code start
         #Stable Video Diffusion: Scaling Latent Video Diffusion Models to Large Datasets, page 19, formula (10)~(14)
         c_skip, c_out, c_in, c_noise = self.scaling(sigma)
-        #print(f"Stable Video Diffusion: Scaling Latent Video Diffusion Models to Large Datasets, page 19, formula (10)~(14): c parameters")
-        #print(f"c_skip: {c_skip}")
-        #print(f"c_out: {c_out}")
-        #print(f"c_in: {c_in}")
-        #print(f"c_noise: {c_noise}")
-
 
         c_noise = self.possibly_quantize_c_noise(c_noise.reshape(sigma_shape))
         
         #Stable Video Diffusion: Scaling Latent Video Diffusion Models to Large Datasets, page 18, formula (3)
         denoised_result = network(input * c_in, c_noise, cond, **additional_model_inputs) * c_out + input * c_skip
-        #print(f"Stable Video Diffusion: Scaling Latent Video Diffusion Models to Large Datasets, page 18, formula (3): calculate denoised result")
-        #print(f"input: {input[:1, :1, :1]}")
-        #print(f"Dθ(x; σ) = cskip(σ)x + cout(σ)Fθ(cin(σ)x; cnoise(σ)): denoised_result: {denoised_result[:1, :1, :1]}")
 
         """
         return (
