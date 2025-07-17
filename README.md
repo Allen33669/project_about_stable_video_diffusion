@@ -36,7 +36,7 @@
 <blockquote>
 <h3>Features: </h3>
 <blockquote>
-Stable Video Diffusion: A brief introduction to the paper and SVD source code: SVD LoRA ConvXd fine-tuning, add text condition, simple lora analysis<br>
+Stable Video Diffusion: A brief introduction to the paper and SVD source code: SVD LoRA fine-tuning, add text condition, simple lora analysis<br>
   <blockquote>
   project_about_stable_video_diffusion_2_9_0.ipynb<br>
     A brief introduction:<br> 
@@ -137,7 +137,7 @@ PEFT (Parameter-Efficient Fine-Tuning) and LoRA (Low-Rank Adaptation): A brief i
 <br>
 <h3>2.9.0: </h3>
 <blockquote>
-Stable Video Diffusion: A brief introduction to the paper and SVD source code: SVD LoRA ConvXd fine-tuning, add text condition, simple lora analysis<br>
+Stable Video Diffusion: A brief introduction to the paper and SVD source code: SVD LoRA fine-tuning, add text condition, simple lora analysis<br>
   project_about_stable_video_diffusion_2_9_0.ipynb:<br>
     LoRA Linear class in attention (Q, K, V, FFN)<br>
     generate lora analysis samples:<br>
@@ -243,8 +243,6 @@ project_about_stable_video_diffusion_0_1_0.ipynb<br>
 </blockquote>
 </blockquote>
 <br>
-
-
 
 
 
