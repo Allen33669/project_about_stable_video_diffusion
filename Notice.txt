@@ -8,7 +8,8 @@ Derivative Work:
         text condition: add text condition as time context
         LoRA:
           LoRA ConvXd class
-          train with LoRA ConvXd
+          LoRA Linear class in attention (Q, K, V, FFN)
+          train with LoRA ConvXd, LoRA Linear
           save lora weight
           load lora weight by update weight of the original layer of the base model
       optimizer:
@@ -25,6 +26,8 @@ Derivative Work:
         model layer
         model Unet layer
         model position
+        replaced module
+        module task
         current time step
         current_batch_step
         current_epoch_step

@@ -9,6 +9,11 @@ from ...util import append_dims, instantiate_from_config
 from .denoiser import Denoiser
 
 
+
+import copy #modified code start end
+
+
+
 class StandardDiffusionLoss(nn.Module):
     def __init__(
         self,
@@ -16,9 +21,12 @@ class StandardDiffusionLoss(nn.Module):
         loss_weighting_config: dict,
         loss_type: str = "l2",
         offset_noise_level: float = 0.0,
-        batch2model_keys: Optional[Union[str, List[str]]] = None,
+        batch2model_keys: Optional[Union[str, List[str]]] = None, 
+        use_appearence_free_loss_w: float = 0, 
     ):
         super().__init__()
+
+        self.use_appearence_free_loss_w = use_appearence_free_loss_w #mofided code start end
 
         assert loss_type in ["l2", "l1", "lpips"]
 
@@ -86,6 +94,17 @@ class StandardDiffusionLoss(nn.Module):
         model_output = denoiser(
             network, noised_input, sigmas, cond, **additional_model_inputs
         )
+
+        #modified code start
+        if self.use_appearence_free_loss_w != 0:
+          cond_appearence = {k: v.clone() for k, v in cond.items()}
+          cond_appearence["crossattn_time_context"] = cond_appearence["crossattn_time_context_appearence"]
+          model_output_appearence = denoiser(
+            network, noised_input, sigmas, cond_appearence, **additional_model_inputs
+          )
+          input = (1 + self.use_appearence_free_loss_w) * input - self.use_appearence_free_loss_w * model_output_appearence
+        #modified code end
+
         w = append_dims(self.loss_weighting(sigmas), input.ndim)
         return self.get_loss(model_output, input, w)
 

@@ -181,22 +181,37 @@ params:
 -scale: lora scale
 -in_model_layer: statistics info in lora module
 -in_model_Unet_up_or_down_layer: statistics info in lora module
+-in_model_task: handle spacial, temporal, or etc. like "spatial", "temporal", "original", and etc.
 return: replaced module
 """
 def replace_lora_module_with_statistic_info(
   module, 
   module_name: str, 
   target_module,
-  target_module_name: str,  
+  target_module_name: str, 
+  target_module_in_list: int = -1, 
   r = 16,
   scale: float = 1.0, 
   in_model_layer: int = None, 
   in_model_Unet_up_or_down_layer: int = None, 
+  in_model_task: str = None,
+  register_statistic_sample_backward_hook: bool = True, 
 ):
   replace_module = None
   
   if target_module.__class__.__name__ == "Linear":
-      return
+      replace_module = LoraLinear(
+                                  target_module.in_features, 
+                                  target_module.out_features, 
+                                  target_module.bias is not None, 
+                                  r, 
+                                  scale, 
+                                  in_model_layer = in_model_layer, 
+                                  in_model_Unet_up_or_down_layer = in_model_Unet_up_or_down_layer, 
+                                  in_model_position = target_module_name, 
+                                  in_model_replaced_module = target_module.__class__.__name__, 
+                                  in_model_task = in_model_task, 
+                                 )
   elif target_module.__class__.__name__ == "Conv1d":
       replace_module = LoraConv1d(
                                   target_module.in_channels, 
@@ -213,6 +228,7 @@ def replace_lora_module_with_statistic_info(
                                   in_model_Unet_up_or_down_layer = in_model_Unet_up_or_down_layer, 
                                   in_model_position = target_module.__class__.__name__, 
                                   in_model_replaced_module = target_module.__class__.__name__, 
+                                  in_model_task = in_model_task, 
                                  )
   elif target_module.__class__.__name__ == "Conv2d":
       replace_module = LoraConv2d(
@@ -230,6 +246,7 @@ def replace_lora_module_with_statistic_info(
                                   in_model_Unet_up_or_down_layer = in_model_Unet_up_or_down_layer, 
                                   in_model_position = target_module.__class__.__name__, 
                                   in_model_replaced_module = target_module.__class__.__name__, 
+                                  in_model_task = in_model_task, 
                                  )
   elif target_module.__class__.__name__ == "Conv3d":
       replace_module = LoraConv3d(
@@ -247,14 +264,24 @@ def replace_lora_module_with_statistic_info(
                                   in_model_Unet_up_or_down_layer = in_model_Unet_up_or_down_layer, 
                                   in_model_position = target_module.__class__.__name__, 
                                   in_model_replaced_module = target_module.__class__.__name__, 
+                                  in_model_task = in_model_task, 
                                  )
+  
+  if target_module_in_list == -1:
+    module._modules[target_module_name] = replace_module
+    module._modules[target_module_name].register_full_backward_hook(save_statistic_sample_backward_hook)
+  else:
+    module[target_module_in_list] = replace_module
+    module[target_module_in_list].register_full_backward_hook(save_statistic_sample_backward_hook)
 
-  module._modules[target_module_name] = replace_module
-  module._modules[target_module_name].register_full_backward_hook(save_statistic_sample_backward_hook)
+  """
+  if register_statistic_sample_backward_hook:
+    module._modules[target_module_name].register_full_backward_hook(save_statistic_sample_backward_hook)
+  """
 
   print(f'replace_lora_module_with_statistic_info > parent module: {module_name}, target_module_name: {target_module_name}, target_module_class_name: {target_module.__class__.__name__}')
 
-  return module._modules[target_module_name]
+  #return module._modules[target_module_name]
 
 
 
@@ -276,7 +303,8 @@ def add_lora_into_model_with_statistic_info(
   depth: int, 
   depth_max: int = 20, 
   in_model_layer: int = None, 
-  in_model_Unet_up_or_down_layer:int = None, 
+  in_model_Unet_up_or_down_layer: int = None, 
+  in_model_task: str = None, 
 ):
   if depth >= depth_max:
     return
@@ -284,10 +312,10 @@ def add_lora_into_model_with_statistic_info(
   for name, module in model.named_children():   
     #replace the module to lora module 
     if module.__class__.__name__ == target:
-      replace_lora_module_with_statistic_info(model, model_name, module, name, in_model_layer=in_model_layer, in_model_Unet_up_or_down_layer=in_model_Unet_up_or_down_layer)
+      replace_lora_module_with_statistic_info(model, model_name, module, name, in_model_layer=in_model_layer, in_model_Unet_up_or_down_layer=in_model_Unet_up_or_down_layer, in_model_task=in_model_task)
     else:
       depth += 1
-      add_lora_into_model_with_statistic_info(module, name, target, depth, in_model_layer=in_model_layer, in_model_Unet_up_or_down_layer=in_model_Unet_up_or_down_layer)
+      add_lora_into_model_with_statistic_info(module, name, target, depth, in_model_layer=in_model_layer, in_model_Unet_up_or_down_layer=in_model_Unet_up_or_down_layer, in_model_task=in_model_task)
 
 
 
@@ -381,6 +409,9 @@ def update_lora_weight_direct(
     lora_up_weight_x_rearrange = rearrange(lora_up_weight_x, 'o_c i_c d h w -> d h w o_c i_c')
     lora_weight_x_rearrange = torch.matmul(lora_up_weight_x_rearrange, lora_down_weight_x_rearrange)
     lora_weight_x = rearrange(lora_weight_x_rearrange, 'd h w o_c i_c -> o_c i_c d h w').to("cuda")
+    update_weight_x = weight_x + lora_weight_x
+  elif lora_x["class_name"] == "LoraLinear":
+    lora_weight_x = torch.matmul(lora_up_weight_x, lora_down_weight_x).to("cuda")
     update_weight_x = weight_x + lora_weight_x
 
   #update module weight by lora weight

@@ -139,7 +139,7 @@ model:
     loss_fn_config:
       target: sgm.modules.diffusionmodules.loss.StandardDiffusionLoss
       params:
-        loss_type: l1
+        loss_type: l2
         loss_weighting_config:
           target: sgm.modules.diffusionmodules.loss_weighting.EDMWeighting
           params:

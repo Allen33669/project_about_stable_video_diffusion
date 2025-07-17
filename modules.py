@@ -73,7 +73,9 @@ class GeneralConditioner(nn.Module):
     KEY2CATDIM = {"vector": 1, "crossattn": 2, "concat": 1, "cond_view": 1, "cond_motion": 1}
 
     TIMECONTEXTKEY = "crossattn_time_context" #modified code start end
+    TIMECONTEXTAPPEARENCEKEY = "crossattn_time_context_appearence" #modified code start end
     
+
 
     def __init__(self, emb_models: Union[List, ListConfig]):
         super().__init__()
@@ -84,6 +86,7 @@ class GeneralConditioner(nn.Module):
         self.embedder_text, _, _ = open_clip.create_model_and_transforms(model_name, pretrained=checkpoint)
         self.tokenizer_text = open_clip.get_tokenizer(model_name)
         self.embedder_text.input_key = "text"
+        self.embedder_text.input_key_2 = "text_2"
         #modified code end
 
         embedders = []
@@ -192,10 +195,17 @@ class GeneralConditioner(nn.Module):
                     output[out_key] = emb
                 
         #modified code start
-        tokenized_text = self.tokenizer_text(batch[self.embedder_text.input_key]).to('cuda')
-        emb_time_context = self.embedder_text.encode_text(tokenized_text)
-        emb_time_context = emb_time_context.unsqueeze(1)
-        output[self.TIMECONTEXTKEY] = emb_time_context
+        if self.embedder_text.input_key in batch:
+          tokenized_text = self.tokenizer_text(batch[self.embedder_text.input_key]).to('cuda')
+          emb_time_context = self.embedder_text.encode_text(tokenized_text)
+          emb_time_context = emb_time_context.unsqueeze(1)
+          output[self.TIMECONTEXTKEY] = emb_time_context
+
+        if self.embedder_text.input_key_2 in batch:
+          tokenized_text_2 = self.tokenizer_text(batch[self.embedder_text.input_key_2]).to('cuda')
+          emb_time_context_2 = self.embedder_text.encode_text(tokenized_text_2)
+          emb_time_context_2 = emb_time_context_2.unsqueeze(1)
+          output[self.TIMECONTEXTAPPEARENCEKEY] = emb_time_context_2
         #modified code end 
 
         return output

@@ -33,7 +33,7 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 
 from my_common_variable import *
-from my_dataset2 import SVDDataset
+from my_dataset2 import SVDDataset, SVDDatasetTwoText
 from my_utils import load_model
 from my_lora_handler import *
 
@@ -46,11 +46,15 @@ print("Current directory:", os.getcwd())
 
 
 
-text_file_path = "/content/generative-models/dataset/frames/text_appearence.txt"
-dataset = SVDDataset(frames_folder=frames_folder, text_file_path=text_file_path, unordered=True)
+#text_file_path = "/content/generative-models/dataset/frames/text_appearence.txt"
+#dataset = SVDDataset(frames_folder=frames_folder, text_file_path=text_file_path, unordered=True)
+
+text_file_path = "/content/generative-models/dataset/frames/text_motion.txt"
+dataset = SVDDataset(frames_folder=frames_folder, text_file_path=text_file_path, unordered=False)
 
 #text_file_path = "/content/generative-models/dataset/frames/text_motion.txt"
-#dataset = SVDDataset(frames_folder=frames_folder, text_file_path=text_file_path, unordered=False)
+#text_2_file_path = "/content/generative-models/dataset/frames/text_appearence.txt"
+#dataset = SVDDatasetTwoText(frames_folder=frames_folder, text_file_path=text_file_path, text_2_file_path=text_2_file_path, unordered=False)
 
 #batch size can be multiples of number of frames in a video
 dataloader = DataLoader(dataset, batch_size=12, shuffle=False)
@@ -74,71 +78,184 @@ model, _ = load_model(
 
 
 
-#replace ConvXd module to LoraConvXd module
+#replace Linear module to LoraLinear module, layer 1, 2, 4, 5, 22, 23, 25, 26, temporal
+lora_layer_list_input_blocks = [1, 2, 4, 5]
+for i in lora_layer_list_input_blocks:
+  in_model_task = "temporal"
 
-for i in range(3):
+  module = model.model.diffusion_model.input_blocks[i][1].time_stack[0].attn2
+  module_name = "model.model.diffusion_model.input_blocks[i].time_stack[0].attn2"
+
+  target_module = model.model.diffusion_model.input_blocks[i][1].time_stack[0].attn2.to_q
+  target_module_name = "to_q"
+  replace_lora_module_with_statistic_info(module, module_name, target_module, target_module_name, in_model_layer=i, in_model_Unet_up_or_down_layer=i, in_model_task=in_model_task)
+
+  target_module = model.model.diffusion_model.input_blocks[i][1].time_stack[0].attn2.to_k
+  target_module_name = "to_k"
+  replace_lora_module_with_statistic_info(module, module_name, target_module, target_module_name, in_model_layer=i, in_model_Unet_up_or_down_layer=i, in_model_task=in_model_task)
+
+  target_module = model.model.diffusion_model.input_blocks[i][1].time_stack[0].attn2.to_v
+  target_module_name = "to_v"
+  replace_lora_module_with_statistic_info(module, module_name, target_module, target_module_name, in_model_layer=i, in_model_Unet_up_or_down_layer=i, in_model_task=in_model_task)
+
+  module = model.model.diffusion_model.input_blocks[i][1].time_stack[0].attn2.to_out
+  module_name = "model.model.diffusion_model.input_blocks[i].time_stack[0].attn2.to_out"
+  target_module = model.model.diffusion_model.input_blocks[i][1].time_stack[0].attn2.to_out[0]
+  target_module_name = "to_out"
+  replace_lora_module_with_statistic_info(module, module_name, target_module, target_module_name, target_module_in_list = 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i, in_model_task=in_model_task)
+
+
+
+lora_layer_list_output_blocks = [22, 23, 25, 26]
+for i in lora_layer_list_output_blocks:
+  i = i - 12 - 3
+  in_model_task = "temporal"
+
+  module = model.model.diffusion_model.output_blocks[i][1].time_stack[0].attn2
+  module_name = "model.model.diffusion_model.output_blocks[i].time_stack[0].attn2"
+
+  target_module = model.model.diffusion_model.output_blocks[i][1].time_stack[0].attn2.to_q
+  target_module_name = "to_q"
+  replace_lora_module_with_statistic_info(module, module_name, target_module, target_module_name, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i, in_model_task=in_model_task)
+
+  target_module = model.model.diffusion_model.output_blocks[i][1].time_stack[0].attn2.to_k
+  target_module_name = "to_k"
+  replace_lora_module_with_statistic_info(module, module_name, target_module, target_module_name, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i, in_model_task=in_model_task)
+
+  target_module = model.model.diffusion_model.output_blocks[i][1].time_stack[0].attn2.to_v
+  target_module_name = "to_v"
+  replace_lora_module_with_statistic_info(module, module_name, target_module, target_module_name, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i, in_model_task=in_model_task)
+
+  module = model.model.diffusion_model.output_blocks[i][1].time_stack[0].attn2.to_out
+  module_name = "model.model.diffusion_model.output_blocks[i].time_stack[0].attn2.to_out"
+  target_module = model.model.diffusion_model.output_blocks[i][1].time_stack[0].attn2.to_out[0]
+  target_module_name = "to_out"
+  replace_lora_module_with_statistic_info(module, module_name, target_module, target_module_name, target_module_in_list = 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i, in_model_task=in_model_task)
+
+
+
+#replace Linear module to LoraLinear module, layer 1, 2, 4, 5, 22, 23, 25, 26, spatial
+lora_layer_list_input_blocks = [1, 2, 4, 5]
+for i in lora_layer_list_input_blocks:
+  in_model_task = "spatial"
+
+  module = model.model.diffusion_model.input_blocks[i][1].transformer_blocks[0].attn2
+  module_name = "model.model.diffusion_model.input_blocks[i][1].transformer_blocks[0].attn2"
+
+  target_module = model.model.diffusion_model.input_blocks[i][1].transformer_blocks[0].attn2.to_q
+  target_module_name = "to_q"
+  replace_lora_module_with_statistic_info(module, module_name, target_module, target_module_name, in_model_layer=i, in_model_Unet_up_or_down_layer=i, in_model_task=in_model_task)
+
+  target_module = model.model.diffusion_model.input_blocks[i][1].transformer_blocks[0].attn2.to_k
+  target_module_name = "to_k"
+  replace_lora_module_with_statistic_info(module, module_name, target_module, target_module_name, in_model_layer=i, in_model_Unet_up_or_down_layer=i, in_model_task=in_model_task)
+
+  target_module = model.model.diffusion_model.input_blocks[i][1].transformer_blocks[0].attn2.to_v
+  target_module_name = "to_v"
+  replace_lora_module_with_statistic_info(module, module_name, target_module, target_module_name, in_model_layer=i, in_model_Unet_up_or_down_layer=i, in_model_task=in_model_task)
+
+  module = model.model.diffusion_model.input_blocks[i][1].transformer_blocks[0].attn2.to_out
+  module_name = "model.model.diffusion_model.input_blocks[i][1].transformer_blocks[0].attn2.to_out"
+  target_module = model.model.diffusion_model.input_blocks[i][1].transformer_blocks[0].attn2.to_out[0]
+  target_module_name = "to_out"
+  replace_lora_module_with_statistic_info(module, module_name, target_module, target_module_name, target_module_in_list = 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i, in_model_task=in_model_task)
+
+
+
+lora_layer_list_output_blocks = [22, 23, 25, 26]
+for i in lora_layer_list_output_blocks:
+  i = i - 12 - 3
+  in_model_task = "spatial"
+
+  module = model.model.diffusion_model.output_blocks[i][1].transformer_blocks[0].attn2
+  module_name = "model.model.diffusion_model.output_blocks[i][1].transformer_blocks[0].attn2"
+
+  target_module = model.model.diffusion_model.output_blocks[i][1].transformer_blocks[0].attn2.to_q
+  target_module_name = "to_q"
+  replace_lora_module_with_statistic_info(module, module_name, target_module, target_module_name, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i, in_model_task=in_model_task)
+
+  target_module = model.model.diffusion_model.output_blocks[i][1].transformer_blocks[0].attn2.to_k
+  target_module_name = "to_k"
+  replace_lora_module_with_statistic_info(module, module_name, target_module, target_module_name, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i, in_model_task=in_model_task)
+
+  target_module = model.model.diffusion_model.output_blocks[i][1].transformer_blocks[0].attn2.to_v
+  target_module_name = "to_v"
+  replace_lora_module_with_statistic_info(module, module_name, target_module, target_module_name, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i, in_model_task=in_model_task)
+
+  module = model.model.diffusion_model.output_blocks[i][1].transformer_blocks[0].attn2.to_out
+  module_name = "model.model.diffusion_model.output_blocks[i][1].transformer_blocks[0].attn2.to_out"
+  target_module = model.model.diffusion_model.output_blocks[i][1].transformer_blocks[0].attn2.to_out[0]
+  target_module_name = "to_out"
+  replace_lora_module_with_statistic_info(module, module_name, target_module, target_module_name, target_module_in_list = 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i, in_model_task=in_model_task)
+
+
+
+#replace ConvXd module to LoraConvXd module
+for i in range(1, 3):
   model_name = "model.model.diffusion_model.input_blocks." + str(i)
   add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv1d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i)
-  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv2d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i)
-  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv3d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv2d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i, in_model_task="spatial")
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv3d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i, in_model_task="temporal")
 
 for i in range(4, 6):
   model_name = "model.model.diffusion_model.input_blocks." + str(i)
   add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv1d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i)
-  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv2d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i)
-  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv3d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv2d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i, in_model_task="spatial")
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv3d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i, in_model_task="temporal")
 
+"""
 for i in range(7, 9):
   model_name = "model.model.diffusion_model.input_blocks." + str(i)
   add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv1d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i)
-  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv2d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i)
-  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv3d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv2d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i, in_model_task="spatial")
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv3d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i, in_model_task="temporal")
 
 for i in range(10, 12):
   model_name = "model.model.diffusion_model.input_blocks." + str(i)
   add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv1d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i)
-  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv2d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i)
-  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv3d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv2d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i, in_model_task="spatial")
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.input_blocks[i], model_name, "Conv3d", 0, in_model_layer=i, in_model_Unet_up_or_down_layer=i, in_model_task="temporal")
 
 
 
 for i in range(2):
   model_name = "model.model.diffusion_model.middle_block." + str(i)
   add_lora_into_model_with_statistic_info(model.model.diffusion_model.middle_block[i], model_name, "Conv1d", 0, in_model_layer=12 + i, in_model_Unet_up_or_down_layer=12 + i)
-  add_lora_into_model_with_statistic_info(model.model.diffusion_model.middle_block[i], model_name, "Conv2d", 0, in_model_layer=12 + i, in_model_Unet_up_or_down_layer=12 + i)
-  add_lora_into_model_with_statistic_info(model.model.diffusion_model.middle_block[i], model_name, "Conv3d", 0, in_model_layer=12 + i, in_model_Unet_up_or_down_layer=12 + i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.middle_block[i], model_name, "Conv2d", 0, in_model_layer=12 + i, in_model_Unet_up_or_down_layer=12 + i, in_model_task="spatial")
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.middle_block[i], model_name, "Conv3d", 0, in_model_layer=12 + i, in_model_Unet_up_or_down_layer=12 + i, in_model_task="temporal")
 
 for i in range(1):
   model_name = "model.model.diffusion_model.middle_block." + str(i)
   add_lora_into_model_with_statistic_info(model.model.diffusion_model.middle_block[2 - i], model_name, "Conv1d", 0, in_model_layer=12 + i, in_model_Unet_up_or_down_layer=12 - i)
-  add_lora_into_model_with_statistic_info(model.model.diffusion_model.middle_block[2 - i], model_name, "Conv2d", 0, in_model_layer=12 + i, in_model_Unet_up_or_down_layer=12 - i)
-  add_lora_into_model_with_statistic_info(model.model.diffusion_model.middle_block[2 - i], model_name, "Conv3d", 0, in_model_layer=12 + i, in_model_Unet_up_or_down_layer=12 - i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.middle_block[2 - i], model_name, "Conv2d", 0, in_model_layer=12 + i, in_model_Unet_up_or_down_layer=12 - i, in_model_task="spatial")
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.middle_block[2 - i], model_name, "Conv3d", 0, in_model_layer=12 + i, in_model_Unet_up_or_down_layer=12 - i, in_model_task="temporal")
 
 
 
 for i in range(3):
   model_name = "model.model.diffusion_model.output_blocks." + str(i)
   add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv1d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i)
-  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv2d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i)
-  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv3d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv2d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i, in_model_task="spatial")
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv3d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i, in_model_task="temporal")
 
 for i in range(4, 6):
   model_name = "model.model.diffusion_model.output_blocks." + str(i)
   add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv1d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i)
-  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv2d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i)
-  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv3d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv2d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i, in_model_task="spatial")
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv3d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i, in_model_task="temporal")
+"""
 
 for i in range(7, 9):
   model_name = "model.model.diffusion_model.output_blocks." + str(i)
   add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv1d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i)
-  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv2d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i)
-  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv3d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv2d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i, in_model_task="spatial")
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv3d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i, in_model_task="temporal")
 
 for i in range(10, 12):
   model_name = "model.model.diffusion_model.output_blocks." + str(i)
   add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv1d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i)
-  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv2d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i)
-  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv3d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i)
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv2d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i, in_model_task="spatial")
+  add_lora_into_model_with_statistic_info(model.model.diffusion_model.output_blocks[i], model_name, "Conv3d", 0, in_model_layer=12 + 3 + i, in_model_Unet_up_or_down_layer=11 - i, in_model_task="temporal")
 
 
 
@@ -167,8 +284,8 @@ class MyEarlyStopping(EarlyStopping):
 
 #train the model
 #trainer = Trainer(max_epochs=2)
-trainer = Trainer(callbacks=[MyEarlyStopping(monitor="early_stop_loss", mode="min", patience=1)])
-#trainer = Trainer(max_epochs=2, callbacks=[MyEarlyStopping(monitor="early_stop_loss", mode="min", patience=1)])
+#trainer = Trainer(callbacks=[MyEarlyStopping(monitor="early_stop_loss", mode="min", patience=2)])
+trainer = Trainer(max_epochs=1, callbacks=[MyEarlyStopping(monitor="early_stop_loss", mode="min", patience=1)])
 trainer.fit(model, dataloader)
 
 
