@@ -7,9 +7,9 @@ Derivative Work:
       model:
         text condition: add text condition as time context
         LoRA:
-          LoRA ConvXd class
           LoRA Linear class in attention (Q, K, V, FFN)
-          train with LoRA ConvXd, LoRA Linear
+          train with LoRA Linear
+          temporal LoRA training uses negative guidance for appearance-agnostic motion. Refer to VideoMage.
           save lora weight
           load lora weight by update weight of the original layer of the base model
       optimizer:
@@ -35,6 +35,6 @@ Derivative Work:
         gradient output
         lora_down_weight
         lora_up_weight
-      lora analysis:
+      lora analysis (only specific layers):
         heatmap
         ols

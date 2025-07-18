@@ -38,7 +38,7 @@
 <blockquote>
 Stable Video Diffusion: A brief introduction to the paper and SVD source code: SVD LoRA fine-tuning, add text condition, simple lora analysis<br>
   <blockquote>
-  project_about_stable_video_diffusion_2_9_0.ipynb<br>
+  project_about_stable_video_diffusion_2_10_0.ipynb<br>
     A brief introduction:<br> 
       framework<br>
         <blockquote>
@@ -59,6 +59,16 @@ Stable Video Diffusion: A brief introduction to the paper and SVD source code: S
         embedding style<br>
         fuse style<br>
         </blockquote>
+      LoRA<br>
+        <blockquote>
+        PEFT (Parameter-Efficient Fine-Tuning) and LoRA (Low-Rank Adaptation): A brief introduction to LoRA<br>
+        "LoRA" section in google colab notebook (LoRA fine-tuning with text condition, simple analysis with appearence and motion)<br>
+        </blockquote>
+      VideoMage<br>
+        <blockquote>
+        VideoMage: Multi-Subject and Motion Customization of Text-to-Video Diffusion Models<br>
+        Refer to VideoMage and its application in this project<br>
+        </blockquote>
    </blockquote>
    <blockquote>
     code:<br>
@@ -67,9 +77,9 @@ Stable Video Diffusion: A brief introduction to the paper and SVD source code: S
         <blockquote>
         text condition: add text condition as time context<br>
         LoRA:<br>
-          LoRA ConvXd class<br>
           LoRA Linear class in attention (Q, K, V, FFN)<br>
-          train with LoRA ConvXd, LoRA Linear<br>
+          train with LoRA Linear<br>
+          temporal LoRA training uses negative guidance for appearance-agnostic motion. Refer to VideoMage.<br>
           save lora weight<br>
           load lora weight by update weight of the original layer of the base model<br>
         </blockquote>
@@ -109,12 +119,21 @@ Stable Video Diffusion: A brief introduction to the paper and SVD source code: S
         heatmap<br>
         ols<br>
         </blockquote>
+
+  project_about_stable_video_diffusion_2_9_0.ipynb
+    <blockquote>
+    LoRA ConvXd class<br>
+    LoRA Linear class in attention (Q, K, V, FFN)<br>
+    lora analysis (only specific layers):<br>
+    </blockquote>
+
   project_about_stable_video_diffusion_2_8_2.ipynb
     <blockquote>
     LoRA ConvXd class<br>
     lora analysis (all layers):<br>
     </blockquote>
   </blockquote>
+
 PEFT (Parameter-Efficient Fine-Tuning) and LoRA (Low-Rank Adaptation): A brief introduction to LoRA<br>
   <blockquote>
   project_about_stable_video_diffusion_1_3_0.ipynb<br>
@@ -134,6 +153,13 @@ PEFT (Parameter-Efficient Fine-Tuning) and LoRA (Low-Rank Adaptation): A brief i
 </blockquote>
 <br>
 <br>
+<br>
+<h3>2.10.0: </h3>
+<blockquote>
+Stable Video Diffusion: A brief introduction to the paper and SVD source code: SVD LoRA fine-tuning, add text condition, simple lora analysis<br>
+  project_about_stable_video_diffusion_2_10_0.ipynb:<br>
+    Temporal LoRA training uses negative guidance for appearance-agnostic motion. Refer to VideoMage.<br>
+</blockquote>
 <br>
 <h3>2.9.0: </h3>
 <blockquote>
@@ -243,6 +269,8 @@ project_about_stable_video_diffusion_0_1_0.ipynb<br>
 </blockquote>
 </blockquote>
 <br>
+
+
 
 
 
