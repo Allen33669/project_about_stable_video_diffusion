@@ -3,6 +3,8 @@ from einops import rearrange
 
 
 
+import copy
+
 from my_common_variable import *
 from my_lora import *
 
@@ -426,11 +428,11 @@ def update_lora_weight_direct(
 description: replace module of base model by lora module, load lora weight from .pth into lora module
 params:
 -model: base model
--file_path: lora module weight file .pth
+-file_path: lora module weight file .pth 
 """
 def load_lora(
   model,
-  file_path: str,
+  file_path: str, 
 ):
 
   lora_weight = torch.load(file_path)
@@ -447,10 +449,162 @@ def load_lora(
     for i in range(length):
       module_name_x = module_name_list.pop(0)
       module_x = module_x._modules[module_name_x]
-    
-    update_lora_weight_direct(module_x, lora)
-    
 
+    update_lora_weight_direct(module_x, lora)
+
+
+
+"""
+description: save model weight with relevant layers in the lora weight file
+params:
+-model: base model
+-lora_file_path: lora module weight file .pth 
+-save_file_path: save file path
+-actions:
+  "save model weight": save original model weight
+  "save model lora weight": save model weight updated by lora
+"""
+def save_weight(
+  model,
+  lora_file_path: str, 
+  save_file_path: str, 
+  actions: str, 
+):
+  #print(f'save_weight > save_file_path: {save_file_path}')
+  #print(f'save_weight > actions: {actions}')
+
+  lora_weight = torch.load(lora_file_path)
+  model_weight = []
+  
+  for lora in lora_weight:
+    #print(f'save_weight > module_name: {lora["module_name"]}')
+    #print(f'save_weight > class_name: {lora["class_name"]}')
+    
+    #find target module
+    module_name_list = lora["module_name"].split(".")
+
+    module_name_list.pop(0)
+    length = len(module_name_list)
+    module_x = model
+    for i in range(length):
+      module_name_x = module_name_list.pop(0)
+      module_x = module_x._modules[module_name_x]
+
+    #print(f'save_weight > module_name: {lora["module_name"]}')
+    #print(f'save_weight > class_name: {lora["class_name"]}')
+    #print(f'save_weight > module_x.__class__.__module__: {module_x.__class__.__module__}')
+    #print(f'save_weight > module_x.__class__.__name__: {module_x.__class__.__name__}')
+
+    #calculate weight and add new weight into model weight list
+    if actions == "save model weight":
+      #print(f'save_weight > save model weight > module_x.weight.data.shape: {module_x.weight.data.shape}')
+      #print(f'save_weight > save model weight > module_x.weight.data.mean(): {module_x.weight.data.mean()}')
+
+      new_model_weight  = {
+                           "module_name": lora["module_name"], 
+                           "class_name": lora["class_name"], 
+                           "module_weight": module_x.weight.data,  
+                          }
+      model_weight.append(new_model_weight)
+
+    elif actions == "save model lora weight":
+      lora_down_weight_x = lora["lora_down_weight"]
+      lora_up_weight_x = lora["lora_up_weight"]
+      weight_x = module_x.weight.data
+
+      #print(f'save_weight > save model lora weight > module_x.weight.data.shape: {module_x.weight.data.shape}')
+      #print(f'save_weight > save model lora weight > module_x.weight.data.mean(): {module_x.weight.data.mean()}')
+      #print(f'save_weight > save model lora weight > lora_down_weight_x.shape: {lora_down_weight_x.shape}')
+      #print(f'save_weight > save model lora weight > lora_down_weight_x.mean(): {lora_down_weight_x.mean()}')
+      #print(f'save_weight > save model lora weight > lora_up_weight_x.shape: {lora_up_weight_x.shape}')
+      #print(f'save_weight > save model lora weight > lora_up_weight_x.mean(): {lora_up_weight_x.mean()}')
+
+      #calculate update lora weight by lora down weight and lora up weight
+      if lora["class_name"] == "LoraConv1d":
+        lora_down_weight_x_rearrange = rearrange(lora_down_weight_x, 'o_c i_c l -> l o_c i_c')
+        lora_up_weight_x_rearrange = rearrange(lora_up_weight_x, 'o_c i_c l -> l o_c i_c')
+        lora_weight_x_rearrange = torch.matmul(lora_up_weight_x_rearrange, lora_down_weight_x_rearrange)
+        lora_weight_x = rearrange(lora_weight_x_rearrange, 'l o_c i_c -> o_c i_c l').to("cuda")
+        update_weight_x = weight_x + lora_weight_x
+      elif lora["class_name"] == "LoraConv2d":
+        lora_down_weight_x_rearrange = rearrange(lora_down_weight_x, 'o_c i_c h w -> h w o_c i_c')
+        lora_up_weight_x_rearrange = rearrange(lora_up_weight_x, 'o_c i_c h w -> h w o_c i_c')
+        lora_weight_x_rearrange = torch.matmul(lora_up_weight_x_rearrange, lora_down_weight_x_rearrange)
+        lora_weight_x = rearrange(lora_weight_x_rearrange, 'h w o_c i_c -> o_c i_c h w').to("cuda")
+        update_weight_x = weight_x + lora_weight_x
+      elif lora["class_name"] == "LoraConv3d":
+        lora_down_weight_x_rearrange = rearrange(lora_down_weight_x, 'o_c i_c d h w -> d h w o_c i_c')
+        lora_up_weight_x_rearrange = rearrange(lora_up_weight_x, 'o_c i_c d h w -> d h w o_c i_c')
+        lora_weight_x_rearrange = torch.matmul(lora_up_weight_x_rearrange, lora_down_weight_x_rearrange)
+        lora_weight_x = rearrange(lora_weight_x_rearrange, 'd h w o_c i_c -> o_c i_c d h w').to("cuda")
+        update_weight_x = weight_x + lora_weight_x
+      elif lora["class_name"] == "LoraLinear":
+        lora_weight_x = torch.matmul(lora_up_weight_x, lora_down_weight_x).to("cuda")
+        update_weight_x = weight_x + lora_weight_x
+
+      #print(f'save_weight > save model lora weight > update_weight_x.shape: {update_weight_x.shape}')
+      #print(f'save_weight > save model lora weight > update_weight_x.mean(): {update_weight_x.mean()}')
+
+      new_model_weight  = {
+                           "module_name": lora["module_name"], 
+                           "class_name": lora["class_name"], 
+                           "module_weight": update_weight_x, 
+                          }
+      model_weight.append(new_model_weight)
+
+
+  #save model weight list
+  torch.save(model_weight, save_file_path)
+
+
+
+
+"""
+description: load weight to the model
+params:
+-model: base model
+-file_path: weight file .pth 
+"""
+def load_weight(
+  model,
+  file_path: str, 
+):
+
+  weights = torch.load(file_path)
+  
+  for weight in weights:
+    #print(f'load_weight > module_name: {weight["module_name"]}')
+    #print(f'load_weight > class_name: {weight["class_name"]}')
+    
+    #find target module
+    module_name_list = weight["module_name"].split(".")
+
+    module_name_list.pop(0)
+    length = len(module_name_list)
+    module_x = model
+    for i in range(length):
+      module_name_x = module_name_list.pop(0)
+      module_x = module_x._modules[module_name_x]
+
+    #update module weight
+    #print(f'load_weight > weight["module_name"]: {weight["module_name"]}')
+    #print(f'load_weight > weight["class_name"]: {weight["class_name"]}')
+    #print(f'load_weight > module_x.__class__.__module__: {module_x.__class__.__module__}')
+    #print(f'load_weight > module_x.__class__.__name__: {module_x.__class__.__name__}')
+    #print(f'load_weight > weight["module_weight"].shape: {weight["module_weight"].shape}')
+    #print(f'load_weight > weight["module_weight"].mean(): {weight["module_weight"].mean()}')
+    #print(f'load_weight > module_x.weight.data.shape: {module_x.weight.data.shape}')
+    #print(f'load_weight > module_x.weight.data.mean(): {module_x.weight.data.mean()}')
+
+    #module_x_weight_min = torch.min(module_x.weight.data)
+    #module_x_weight_max = torch.max(module_x.weight.data)
+    module_x.weight.data = copy.deepcopy(weight["module_weight"])
+    #module_x.weight.data = torch.clamp(module_x.weight.data, min=module_x_weight_min, max=module_x_weight_max)
+
+    #print(f'load_weight > updated module_x.weight.data.shape: {module_x.weight.data.shape}')
+    #print(f'load_weight > updated module_x.weight.data.mean(): {module_x.weight.data.mean()}')
+
+    
   
 """
 description: Enable gradients for lora module in model

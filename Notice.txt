@@ -3,6 +3,10 @@ This Stability AI Model is licensed under the Stability AI Community License, Co
 Powered by Stability AI
 
 Derivative Work:
+      Sampling with Subject branch and Motion branch in EDM. Refer to Spatial-Temporal Collaborative Sampling (SCS) (VideoMage).
+
+
+
       dataset: for unordered appearence dataset and ordered motion dataset
       model:
         text condition: add text condition as time context

@@ -85,7 +85,16 @@ class VideoResBlock(ResBlock):
         image_only_indicator: Optional[th.Tensor] = None,
     ) -> th.Tensor:        
 
+        if torch.isnan(x).sum() > 0:
+          print(f'VideoResBlock > forward > start > torch.isnan(x).sum(): {torch.isnan(x).sum()}')
+          #x = torch.where(torch.isnan(x), torch.tensor(0.0000000001), x)
+          print(f'VideoResBlock > forward > start > torch.isnan(x).sum(): {torch.isnan(x).sum()}')
+
         x = super().forward(x, emb)
+        if torch.isnan(x).sum() > 0:
+          print(f'VideoResBlock > forward > super().forward(x, emb) > torch.isnan(x).sum(): {torch.isnan(x).sum()}')
+          #x = torch.where(torch.isnan(x), torch.tensor(0.0000000001), x)
+          print(f'VideoResBlock > forward > super().forward(x, emb) > torch.isnan(x).sum(): {torch.isnan(x).sum()}')
 
         x_mix = rearrange(x, "(b t) c h w -> b c t h w", t=num_video_frames)
         x = rearrange(x, "(b t) c h w -> b c t h w", t=num_video_frames)
@@ -94,9 +103,18 @@ class VideoResBlock(ResBlock):
         x = self.time_stack(
             x, rearrange(emb, "(b t) ... -> b t ...", t=num_video_frames)
         )
+        if torch.isnan(x).sum() > 0:
+          print(f'VideoResBlock > forward > self.time_stack > torch.isnan(x).sum(): {torch.isnan(x).sum()}')
+          #x = torch.where(torch.isnan(x), torch.tensor(0.0000000001), x)
+          print(f'VideoResBlock > forward > self.time_stack > torch.isnan(x).sum(): {torch.isnan(x).sum()}')
+
         x = self.time_mixer(
             x_spatial=x_mix, x_temporal=x, image_only_indicator=image_only_indicator
         )
+        if torch.isnan(x).sum() > 0:
+          print(f'VideoResBlock > forward > self.time_mixer > torch.isnan(x).sum(): {torch.isnan(x).sum()}')
+          #x = torch.where(torch.isnan(x), torch.tensor(0.0000000001), x)
+          print(f'VideoResBlock > forward > self.time_mixer > torch.isnan(x).sum(): {torch.isnan(x).sum()}')
 
         x = rearrange(x, "b c t h w -> (b t) c h w")
 
@@ -489,6 +507,10 @@ class VideoUNet(nn.Module):
             emb = emb + self.label_emb(y)
 
         h = x
+        if torch.isnan(h).sum() > 0:
+          print(f'VideoUNet > forward > start > torch.isnan(h).sum(): {torch.isnan(h).sum()}')
+          #h = torch.where(torch.isnan(h), torch.tensor(0.0000000001), h)
+          print(f'VideoUNet > forward > start > torch.isnan(h).sum(): {torch.isnan(h).sum()}')
 
         for module in self.input_blocks:
             h = module(
@@ -500,6 +522,10 @@ class VideoUNet(nn.Module):
                 num_video_frames=num_video_frames,
             )
             hs.append(h)
+            if torch.isnan(h).sum() > 0:
+              print(f'VideoUNet > forward > self.input_blocks > torch.isnan(h).sum(): {torch.isnan(h).sum()}')
+              #h = torch.where(torch.isnan(h), torch.tensor(0.0000000001), h)
+              print(f'VideoUNet > forward > self.input_blocks > torch.isnan(h).sum(): {torch.isnan(h).sum()}')
 
         h = self.middle_block(
             h,
@@ -509,6 +535,10 @@ class VideoUNet(nn.Module):
             time_context=time_context,
             num_video_frames=num_video_frames,
         )
+        if torch.isnan(h).sum() > 0:
+          print(f'VideoUNet > forward > self.middle_block > torch.isnan(h).sum(): {torch.isnan(h).sum()}')
+          #h = torch.where(torch.isnan(h), torch.tensor(0.0000000001), h)
+          print(f'VideoUNet > forward > self.middle_block > torch.isnan(h).sum(): {torch.isnan(h).sum()}')
 
         for module in self.output_blocks:
             h = th.cat([h, hs.pop()], dim=1)
@@ -520,6 +550,11 @@ class VideoUNet(nn.Module):
                 time_context=time_context,
                 num_video_frames=num_video_frames,
             )
+            if torch.isnan(h).sum() > 0:
+              print(f'VideoUNet > forward > self.output_blocks > torch.isnan(h).sum(): {torch.isnan(h).sum()}')
+              #h = torch.where(torch.isnan(h), torch.tensor(0.0000000001), h)
+              print(f'VideoUNet > forward > self.output_blocks > torch.isnan(h).sum(): {torch.isnan(h).sum()}')
+
 
         h = h.type(x.dtype)
 

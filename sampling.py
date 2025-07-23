@@ -15,6 +15,12 @@ from ...modules.diffusionmodules.sampling_utils import (get_ancestral_step,
                                                         to_sigma)
 from ...util import append_dims, default, instantiate_from_config
 
+
+
+from my_lora_handler import * #modified code start end
+
+
+
 DEFAULT_GUIDER = {"target": "sgm.modules.diffusionmodules.guiders.IdentityGuider"}
 
 
@@ -182,7 +188,44 @@ class EDMSampler(SingleStepDiffusionSampler):
 
         return x
 
-    def __call__(self, denoiser, x, cond, uc=None, num_steps=None):
+
+
+
+
+
+
+
+    """
+    description: EDM sampling, optional: Spatial-Temporal Collaborative Sampling (SCS) (VideoMage)
+    params:
+    -denoiser: base model
+    -x: input
+    -cond: conditions
+    -uc: un-conditions
+    -num_steps: number of sampling steps
+    -scs_t: Spatial-Temporal Collaborative Sampling (SCS) (VideoMage)
+      = 0: use original sampling
+      > 0: use SCS
+      i: generate new motion input and appearence input in i steps
+    -model: diffusion model, used for update weight and sample
+    -x_motion: motion input
+    -cond_motion: motion conditions
+    -uc_motion: motion un-conditions
+    -x_appearence: appearence input
+    -cond_appearence: appearence conditions
+    -uc_appearence: appearence un-conditions
+    -beta_motion: used for SCS combining motion input and appearence input
+    -beta_appearence: used for SCS combining motion input and appearence input
+    -alpha: used for SCS update motion input and appearence input in scs_t steps
+    """
+    def __call__(self, denoiser, x, cond, uc=None, num_steps=None, 
+                 scs_t: float = -1,  #modified code start end
+                 model = None, #modified code start end
+                 x_motion = None, cond_motion = None, uc_motion =  None, #modified code start end
+                 x_appearence = None, cond_appearence = None, uc_appearence=None, #modified code start end
+                 beta_motion: float = 0.5, beta_appearence: float = 0.5, #modified code start end
+                 alpha: float = 0.1, #modified code start end
+                ):
         #modified code start
         #Elucidating the Design Space of Diffusion-Based Generative Models, Page 7, algorithm 2
 
@@ -191,8 +234,41 @@ class EDMSampler(SingleStepDiffusionSampler):
             x, cond, uc, num_steps
         )
 
+        """ 
+        print(f'EDMSampler > __call__ > self.prepare_sampling_loop > type(x): {type(x)}')
+        if isinstance(x, torch.Tensor):
+          print(f'EDMSampler > __call__ > self.prepare_sampling_loop > x.shape: {x.shape}')
+        print(f'EDMSampler > __call__ > self.prepare_sampling_loop > s_in: {s_in}')
+        print(f'EDMSampler > __call__ > self.prepare_sampling_loop > sigmas: {sigmas}')
+        print(f'EDMSampler > __call__ > self.prepare_sampling_loop > num_sigmas: {num_sigmas}')
+
+        for key, value in cond.items():
+          print(f"EDMSampler > __call__ > cond > key: {key}")
+          print(f"EDMSampler > __call__ > cond > type(value): {type(value)}")
+
+          if isinstance(value, torch.Tensor):
+            print(f"EDMSampler > __call__ > cond > value.shape: {value.shape}")
+            print(f"EDMSampler > __call__ > cond > value.mean(): {value.mean()}")
+          else:
+            print(f"EDMSampler > __call__ > cond > value: {value}")
+
+        for key, value in uc.items():
+          print(f"EDMSampler > __call__ > uc > key: {key}")
+          print(f"EDMSampler > __call__ > uc > type(value): {type(value)}")
+
+          if isinstance(value, torch.Tensor):
+            print(f"EDMSampler > __call__ > uc > value.shape: {value.shape}")
+            print(f"EDMSampler > __call__ > uc > value.mean(): {value.mean()}")
+          else:
+            print(f"EDMSampler > __call__ > uc > value: {value}")
+        """
+
+
+
         #EDMSampler sampling loop
         for i in self.get_sigma_gen(num_sigmas):
+            print(f'EDMSampler > __call__ > i: {i}')
+
             #calculate γ
             gamma = (
                 min(self.s_churn / (num_sigmas - 1), 2**0.5 - 1)
@@ -204,6 +280,115 @@ class EDMSampler(SingleStepDiffusionSampler):
             #print(f"num_sigmas: {num_sigmas}")
             #print(f"gamma: {gamma}")
 
+            #modified code start
+            if scs_t > i:
+              print(f'EDMSampler > __call__ > scs_t: {scs_t}')
+
+              #restore model original weight
+              load_weight(model, file_path="/content/generative-models/model_original_weight_motion.pth")
+              load_weight(model, file_path="/content/generative-models/model_original_weight_appearence.pth")
+
+              #calculate model output with motion condition
+              #print(f'EDMSampler > __call__ > torch.isnan(x).sum(): {torch.isnan(x).sum()}')
+              #print(f'EDMSampler > __call__ > torch.isnan(cond_motion).sum(): {torch.isnan(cond_motion).sum()}')
+              #print(f'EDMSampler > __call__ > torch.isnan(uc_motion).sum(): {torch.isnan(uc_motion).sum()}')
+              
+              x_cond_motion = self.sampler_step(
+                  s_in * sigmas[i],
+                  s_in * sigmas[i + 1],
+                  denoiser,
+                  x,
+                  cond_motion,
+                  uc_motion,
+                  gamma,
+              )
+              
+              #print(f'EDMSampler > __call__ > x_cond_motion.shape: {x_cond_motion.shape}')
+              #print(f'EDMSampler > __call__ > x_cond_motion.mean(): {x_cond_motion.mean()}')
+              #print(f'EDMSampler > __call__ > torch.isnan(x_cond_motion).sum(): {torch.isnan(x_cond_motion).sum()}')
+
+              #x_cond_motion = torch.where(torch.isnan(x_cond_motion), torch.tensor(0.0), x_cond_motion)
+              #print(f'EDMSampler > __call__ > x_cond_motion.shape: {x_cond_motion.shape}')
+              #print(f'EDMSampler > __call__ > x_cond_motion.mean(): {x_cond_motion.mean()}')
+              #print(f'EDMSampler > __call__ > torch.isnan(x_cond_motion).sum(): {torch.isnan(x_cond_motion).sum()}')
+
+              #calculate model output with appearence condition
+              x_cond_appearence = self.sampler_step(
+                  s_in * sigmas[i],
+                  s_in * sigmas[i + 1],
+                  denoiser,
+                  x,
+                  cond_appearence,
+                  uc_appearence,
+                  gamma,
+              )
+              #print(f'EDMSampler > __call__ > x_cond_appearence.shape: {x_cond_appearence.shape}')
+              #print(f'EDMSampler > __call__ > x_cond_appearence.mean(): {x_cond_appearence.mean()}')
+              #print(f'EDMSampler > __call__ > torch.isnan(x_cond_appearence).sum(): {torch.isnan(x_cond_appearence).sum()}')
+
+              #x_cond_appearence = torch.where(torch.isnan(x_cond_appearence), torch.tensor(0.0), x_cond_appearence)
+              #print(f'EDMSampler > __call__ > x_cond_appearence.shape: {x_cond_appearence.shape}')
+              #print(f'EDMSampler > __call__ > x_cond_appearence.mean(): {x_cond_appearence.mean()}')
+              #print(f'EDMSampler > __call__ > torch.isnan(x_cond_appearence).sum(): {torch.isnan(x_cond_appearence).sum()}')
+
+              #update model weight to model motion
+              load_weight(model, file_path="/content/generative-models/model_lora_weight_motion.pth")
+
+              #calculate motion model output with motion condition
+              x_motion = self.sampler_step(
+                  s_in * sigmas[i],
+                  s_in * sigmas[i + 1],
+                  denoiser,
+                  x,
+                  cond_motion,
+                  uc_motion,
+                  gamma,
+              )
+              #print(f'EDMSampler > __call__ > x_motion.shape: {x_motion.shape}')
+              #print(f'EDMSampler > __call__ > x_motion.mean(): {x_motion.mean()}')
+              #print(f'EDMSampler > __call__ > torch.isnan(x_motion).sum(): {torch.isnan(x_motion).sum()}')
+
+              #x_motion = torch.where(torch.isnan(x_motion), torch.tensor(0.0), x_motion)
+              #print(f'EDMSampler > __call__ > x_motion.shape: {x_motion.shape}')
+              #print(f'EDMSampler > __call__ > x_motion.mean(): {x_motion.mean()}')
+              #print(f'EDMSampler > __call__ > torch.isnan(x_motion).sum(): {torch.isnan(x_motion).sum()}')
+
+              #update model weight to model appearence
+              load_weight(model, file_path="/content/generative-models/model_original_weight_motion.pth")
+              load_weight(model, file_path="/content/generative-models/model_lora_weight_appearence.pth")
+
+              #calculate appearence model output with appearence condition
+              x_appearence = self.sampler_step(
+                  s_in * sigmas[i],
+                  s_in * sigmas[i + 1],
+                  denoiser,
+                  x,
+                  cond_appearence,
+                  uc_appearence,
+                  gamma,
+              )
+              #print(f'EDMSampler > __call__ > x_appearence.shape: {x_appearence.shape}')
+              #print(f'EDMSampler > __call__ > x_appearence.mean(): {x_appearence.mean()}')
+              #print(f'EDMSampler > __call__ > torch.isnan(x_appearence).sum(): {torch.isnan(x_appearence).sum()}')
+
+              #x_appearence = torch.where(torch.isnan(x_appearence), torch.tensor(0.0), x_appearence)
+              #print(f'EDMSampler > __call__ > x_appearence.shape: {x_appearence.shape}')
+              #print(f'EDMSampler > __call__ > x_appearence.mean(): {x_appearence.mean()}')
+              #print(f'EDMSampler > __call__ > torch.isnan(x_appearence).sum(): {torch.isnan(x_appearence).sum()}')
+
+
+
+              #update x_motion
+              x_motion = x_motion - alpha * (x_appearence - x_cond_motion)
+              #x_motion = torch.clamp(x_motion, min=1e-10)
+
+              #update x_appearence
+              x_appearence = x_appearence - alpha * (x_cond_appearence - x_motion)
+              #x_appearence = torch.clamp(x_appearence, min=1e-10)
+
+
+
+            """
             #EDMSampler sampling one step
             x = self.sampler_step(
                 s_in * sigmas[i],
@@ -214,6 +399,83 @@ class EDMSampler(SingleStepDiffusionSampler):
                 uc,
                 gamma,
             )
+            """
+
+            #modified code start
+            if scs_t > 0: 
+              #restore model original weight
+              load_weight(model, file_path="/content/generative-models/model_original_weight_motion.pth")
+              load_weight(model, file_path="/content/generative-models/model_original_weight_appearence.pth")
+
+              #update model weight to model motion
+              load_weight(model, file_path="/content/generative-models/model_lora_weight_motion.pth")
+
+              #calculate new x_motion and x_appearence, combine x_motion and x_appearence
+              x_motion = self.sampler_step(
+                  s_in * sigmas[i],
+                  s_in * sigmas[i + 1],
+                  denoiser,
+                  x_motion,
+                  cond_motion,
+                  uc_motion,
+                  gamma,
+              )
+              #print(f'EDMSampler > __call__ > final x_motion.shape: {x_motion.shape}')
+              #print(f'EDMSampler > __call__ > final x_motion.mean(): {x_motion.mean()}')
+              #print(f'EDMSampler > __call__ > torch.isnan(x_motion).sum(): {torch.isnan(x_motion).sum()}')
+
+              #x_motion = torch.where(torch.isnan(x_motion), torch.tensor(0.0), x_motion)
+              #print(f'EDMSampler > __call__ > x_motion.shape: {x_motion.shape}')
+              #print(f'EDMSampler > __call__ > x_motion.mean(): {x_motion.mean()}')
+              #print(f'EDMSampler > __call__ > torch.isnan(x_motion).sum(): {torch.isnan(x_motion).sum()}')
+
+
+
+              #update model weight to model appearence
+              load_weight(model, file_path="/content/generative-models/model_original_weight_motion.pth")
+              load_weight(model, file_path="/content/generative-models/model_lora_weight_appearence.pth")
+
+              x_appearence = self.sampler_step(
+                  s_in * sigmas[i],
+                  s_in * sigmas[i + 1],
+                  denoiser,
+                  x_appearence,
+                  cond_appearence,
+                  uc_appearence,
+                  gamma,
+              )
+              #print(f'EDMSampler > __call__ > final x_appearence.shape: {x_appearence.shape}')
+              #print(f'EDMSampler > __call__ > final x_appearence.mean(): {x_appearence.mean()}')
+              #print(f'EDMSampler > __call__ > torch.isnan(x_appearence).sum(): {torch.isnan(x_appearence).sum()}')
+
+              #x_appearence = torch.where(torch.isnan(x_appearence), torch.tensor(0.0), x_appearence)
+              #print(f'EDMSampler > __call__ > x_appearence.shape: {x_appearence.shape}')
+              #print(f'EDMSampler > __call__ > x_appearence.mean(): {x_appearence.mean()}')
+              #print(f'EDMSampler > __call__ > torch.isnan(x_appearence).sum(): {torch.isnan(x_appearence).sum()}')
+
+
+
+              x = beta_motion * x_motion + beta_appearence * x_appearence
+              #x = torch.clamp(x, min=1e-10)
+              #print(f'EDMSampler > __call__ > final x.shape: {x.shape}')
+              #print(f'EDMSampler > __call__ > final x.mean(): {x.mean()}')
+
+            else:
+              #EDMSampler sampling one 
+              x = self.sampler_step(
+                  s_in * sigmas[i],
+                  s_in * sigmas[i + 1],
+                  denoiser,
+                  x,
+                  cond,
+                  uc,
+                  gamma,
+              )
+
+            #modified code end
+
+
+
         #modified code end
         return x
 

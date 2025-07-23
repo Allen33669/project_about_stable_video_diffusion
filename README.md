@@ -36,6 +36,10 @@
 <blockquote>
 <h3>Features: </h3>
 <blockquote>
+Stable Video Diffusion: A brief introduction to the paper and SVD source code: SVD LoRA fine-tuning, add text condition, Spatial-Temporal Collaborative Sampling (SCS) (VideoMage)<br>
+  project_about_stable_video_diffusion_2_11_1.ipynb<br>
+    Sampling with Subject branch and Motion branch in EDM. Refer to Spatial-Temporal Collaborative Sampling (SCS) (VideoMage).<br><br>
+
 Stable Video Diffusion: A brief introduction to the paper and SVD source code: SVD LoRA fine-tuning, add text condition, simple lora analysis<br>
   <blockquote>
   project_about_stable_video_diffusion_2_10_0.ipynb<br>
@@ -154,6 +158,12 @@ PEFT (Parameter-Efficient Fine-Tuning) and LoRA (Low-Rank Adaptation): A brief i
 <br>
 <br>
 <br>
+<h3>2.11.1: </h3>
+<blockquote>
+Stable Video Diffusion: A brief introduction to the paper and SVD source code: SVD LoRA fine-tuning, add text condition, Spatial-Temporal Collaborative Sampling (SCS) (VideoMage)<br>
+  project_about_stable_video_diffusion_2_11_1.ipynb:<br>
+    Sampling with Subject branch and Motion branch in EDM. Refer to Spatial-Temporal Collaborative Sampling (SCS) (VideoMage).<br>
+</blockquote>
 <h3>2.10.0: </h3>
 <blockquote>
 Stable Video Diffusion: A brief introduction to the paper and SVD source code: SVD LoRA fine-tuning, add text condition, simple lora analysis<br>

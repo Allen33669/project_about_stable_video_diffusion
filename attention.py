@@ -371,6 +371,8 @@ class MemoryEfficientCrossAttention(nn.Module):
         )
         self.attention_op: Optional[Any] = None
 
+
+
     def forward(
         self,
         x,
@@ -379,7 +381,24 @@ class MemoryEfficientCrossAttention(nn.Module):
         additional_tokens=None,
         n_times_crossframe_attn_in_self=0,
     ):
+        #modified code start
+        #print(f'attention.py > MemoryEfficientCrossAttention > forward: x.shape: {x.shape}')
+        if context is not None:
+          #print(f'attention.py > MemoryEfficientCrossAttention > forward: context.shape: {context.shape}')
 
+          x_0_shape, _, _ = x.shape
+          context_0_shape, _, _ = context.shape
+          while context_0_shape < x_0_shape:
+             context = context.repeat(2, 1, 1)
+             context_0_shape, _, _ = context.shape
+             #print(f'attention.py > MemoryEfficientCrossAttention > forward: context.shape: {context.shape}')
+
+        else:
+          pass
+          #print(f'attention.py > MemoryEfficientCrossAttention > forward: context: None')
+        #print(f'attention.py > MemoryEfficientCrossAttention > forward: n_times_crossframe_attn_in_self: {n_times_crossframe_attn_in_self}')
+
+        #modified code end
 
         if additional_tokens is not None:
             # get the number of masked tokens at the beginning of the output sequence
@@ -390,6 +409,10 @@ class MemoryEfficientCrossAttention(nn.Module):
         context = default(context, x)
         k = self.to_k(context)
         v = self.to_v(context)
+
+        #print(f'attention.py > MemoryEfficientCrossAttention > forward: q.shape: {q.shape}')
+        #print(f'attention.py > MemoryEfficientCrossAttention > forward: k.shape: {k.shape}')
+        #print(f'attention.py > MemoryEfficientCrossAttention > forward: v.shape: {v.shape}')
 
         if n_times_crossframe_attn_in_self:
             # reprogramming cross-frame attention as in https://arxiv.org/abs/2303.13439
@@ -407,6 +430,11 @@ class MemoryEfficientCrossAttention(nn.Module):
             )
 
         b, _, _ = q.shape
+
+        #print(f'attention.py > MemoryEfficientCrossAttention > forward: b: {b}')
+        #print(f'attention.py > MemoryEfficientCrossAttention > forward: q.shape: {q.shape}')
+        #print(f'attention.py > MemoryEfficientCrossAttention > forward: k.shape: {k.shape}')
+        #print(f'attention.py > MemoryEfficientCrossAttention > forward: v.shape: {v.shape}')
 
         q, k, v = map(
             lambda t: t.unsqueeze(3)
