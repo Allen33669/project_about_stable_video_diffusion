@@ -166,7 +166,7 @@ Stable Video Diffusion: A brief introduction to the paper and SVD source code: S
   project_about_stable_video_diffusion_2_11_1.ipynb:<br>
     Sampling with Subject branch and Motion branch in EDM. Refer to Spatial-Temporal Collaborative Sampling (SCS) (VideoMage).<br>
 </blockquote>
-br>
+<br>
 <h3>2.10.0: </h3>
 <blockquote>
 Stable Video Diffusion: A brief introduction to the paper and SVD source code: SVD LoRA fine-tuning, add text condition, simple lora analysis<br>
@@ -282,7 +282,6 @@ project_about_stable_video_diffusion_0_1_0.ipynb<br>
 </blockquote>
 </blockquote>
 <br>
-
 
 
 
