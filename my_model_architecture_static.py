@@ -3,7 +3,7 @@ import os
 
 
 from my_common_variable import *
-from my_dataset2 import SVDDataset
+#from my_dataset2 import SVDDataset
 from my_utils import load_model 
 
 
@@ -15,10 +15,10 @@ print("Current directory:", os.getcwd())
 
 
 
-model_config = "/content/generative-models/svd_train.yaml"
+model_config = "/content/generative-models/svd_train_conditions_context.yaml"
 device = "cuda"
-num_frames = 6
-num_steps = 1
+num_frames = 14
+num_steps = 25
 verbose = True
 
 model, _ = load_model(

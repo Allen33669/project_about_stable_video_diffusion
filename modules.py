@@ -24,6 +24,13 @@ from ...util import (append_dims, autocast, count_params, default,
                      disabled_train, expand_dims_like, instantiate_from_config)
 
 
+
+from my_utils import * #modified code start end
+from my_common_variable import * #modified code start end
+from my_context_embedder import * #modified code start end
+
+
+
 class AbstractEmbModel(nn.Module):
     def __init__(self):
         super().__init__()
@@ -72,23 +79,8 @@ class GeneralConditioner(nn.Module):
     OUTPUT_DIM2KEYS = {2: "vector", 3: "crossattn", 4: "concat"} # , 5: "concat"}
     KEY2CATDIM = {"vector": 1, "crossattn": 2, "concat": 1, "cond_view": 1, "cond_motion": 1}
 
-    TIMECONTEXTKEY = "crossattn_time_context" #modified code start end
-    TIMECONTEXTAPPEARENCEKEY = "crossattn_time_context_appearence" #modified code start end
-    
-
-
     def __init__(self, emb_models: Union[List, ListConfig]):
         super().__init__()
-
-        #modified code start
-        model_name = "ViT-H-14"
-        checkpoint = "laion2b_s32b_b79k"
-        self.embedder_text, _, _ = open_clip.create_model_and_transforms(model_name, pretrained=checkpoint)
-        self.tokenizer_text = open_clip.get_tokenizer(model_name)
-        self.embedder_text.input_key = "text"
-        self.embedder_text.input_key_2 = "text_2"
-        #modified code end
-
         embedders = []
         for n, embconfig in enumerate(emb_models):
             embedder = instantiate_from_config(embconfig)
@@ -123,6 +115,15 @@ class GeneralConditioner(nn.Module):
             embedders.append(embedder)
         self.embedders = nn.ModuleList(embedders)
 
+        #text embedder for context embedder
+        self.text_embedder = TextEmbedder()
+
+        #context embedder
+        self.spatial_context_embedder = SpatialContextEmbedder()
+        self.temporal_context_embedder = TemporalContextEmbedder()
+
+
+
     def possibly_get_ucg_val(self, embedder: AbstractEmbModel, batch: Dict) -> Dict:
         assert embedder.legacy_ucg_val is not None
         p = embedder.ucg_rate
@@ -135,6 +136,7 @@ class GeneralConditioner(nn.Module):
     def forward(
         self, batch: Dict, force_zero_embeddings: Optional[List] = None
     ) -> Dict:
+        print_all(batch, "GeneralConditioner > forward > batch >") #modified code start end
 
         output = dict()
         if force_zero_embeddings is None:
@@ -149,15 +151,16 @@ class GeneralConditioner(nn.Module):
 
                     if embedder.legacy_ucg_val is not None:
                         batch = self.possibly_get_ucg_val(embedder, batch)
-                    emb_out = embedder(batch[embedder.input_key])
                     #emb_out: the embedded condition
+                    emb_out = embedder(batch[embedder.input_key])
 
                 elif hasattr(embedder, "input_keys"):
                     #embedder.input_key: which embedder is used
                     #batch[embedder.input_key]: the original input condition
 
-                    emb_out = embedder(*[batch[k] for k in embedder.input_keys])
                     #emb_out: the embedded condition
+                    emb_out = embedder(*[batch[k] for k in embedder.input_keys])
+
                     #modified code end
 
             assert isinstance(
@@ -193,20 +196,85 @@ class GeneralConditioner(nn.Module):
                     )
                 else:
                     output[out_key] = emb
-                
-        #modified code start
-        if self.embedder_text.input_key in batch:
-          tokenized_text = self.tokenizer_text(batch[self.embedder_text.input_key]).to('cuda')
-          emb_time_context = self.embedder_text.encode_text(tokenized_text)
-          emb_time_context = emb_time_context.unsqueeze(1)
-          output[self.TIMECONTEXTKEY] = emb_time_context
 
-        if self.embedder_text.input_key_2 in batch:
-          tokenized_text_2 = self.tokenizer_text(batch[self.embedder_text.input_key_2]).to('cuda')
-          emb_time_context_2 = self.embedder_text.encode_text(tokenized_text_2)
-          emb_time_context_2 = emb_time_context_2.unsqueeze(1)
-          output[self.TIMECONTEXTAPPEARENCEKEY] = emb_time_context_2
-        #modified code end 
+        #modified code start
+
+        #prepare output[input_concat_key] image
+        print_all(output[input_concat_key], "GeneralConditioner > forward > output[input_concat_key] >")
+
+        input_concat_embedding = batch[input_image_weight_key][0].item() * output[input_concat_key]
+        output[input_concat_key] = input_concat_embedding
+        print_all(output[input_concat_key], "GeneralConditioner > forward > output[input_concat_key] > after combined >")
+        
+        #prepare output[spatial_crossattn_context_key] image
+        spatial_image_embedding = None
+        for embedder in self.embedders:
+          if embedder.input_key == "cond_frames_without_noise":
+            embedding_context = nullcontext if embedder.is_trainable else torch.no_grad
+            with embedding_context():
+              spatial_image_embedding = embedder(batch[spatial_image_key])
+
+        print_all(spatial_image_embedding, "GeneralConditioner > forward > spatial_image_embedding >")
+
+        #prepare output[spatial_crossattn_context_key] text
+        print_all(batch[spatial_text_key], "GeneralConditioner > forward > batch[spatial_text_key] >")
+        print(f'batch[spatial_text_key]: {batch[spatial_text_key]}')
+
+        spatial_text_embedding = self.text_embedder.embed_text(batch[spatial_text_key])
+
+        #prepare output[spatial_crossattn_context_key] conditions context
+        spatial_conditions_context_embedding = []
+        for i in range(batch[spatial_conditions_context_key].size(0)):
+          spatial_conditions_context_embedding_i = self.spatial_context_embedder(batch[spatial_conditions_context_key][i], spatial_text_embedding[i])
+          spatial_conditions_context_embedding.append(spatial_conditions_context_embedding_i)
+        spatial_conditions_context_embedding = torch.stack(spatial_conditions_context_embedding)
+
+        #prepare output[spatial_crossattn_context_key]
+        spatial_image_embedding = spatial_image_embedding.to("cuda")
+        spatial_text_embedding = spatial_text_embedding.to("cuda")
+        spatial_conditions_context_embedding = spatial_conditions_context_embedding.to("cuda")
+        print_all(spatial_image_embedding, "GeneralConditioner > forward > spatial_image_embedding >")
+        print_all(spatial_text_embedding, "GeneralConditioner > forward > spatial_text_embedding >")
+        print_all(spatial_conditions_context_embedding, "GeneralConditioner > forward > spatial_conditions_context_embedding >")
+        
+        spatial_crossattn_context_embedding = batch[spatial_image_weight_key][0].item() * spatial_image_embedding + batch[spatial_text_weight_key][0].item() * spatial_text_embedding + batch[spatial_conditions_context_weight_key][0].item() * spatial_conditions_context_embedding 
+        output[spatial_crossattn_context_key] = spatial_crossattn_context_embedding
+        print_all(output[spatial_crossattn_context_key], "GeneralConditioner > forward > output[spatial_crossattn_context_key] > after combined >")
+  
+        #prepare output[temporal_crossattn_context_key] image
+        temporal_image_embedding = None
+        for embedder in self.embedders:
+          if embedder.input_key == "cond_frames_without_noise":
+            embedding_context = nullcontext if embedder.is_trainable else torch.no_grad
+            with embedding_context():
+              temporal_image_embedding = embedder(batch[temporal_image_key]) 
+        print_all(temporal_image_embedding, "GeneralConditioner > forward > temporal_image_embedding >")
+
+        #prepare output[temporal_crossattn_context_key] text
+        temporal_text_embedding = self.text_embedder.embed_text(batch[temporal_text_key])
+        print_all(temporal_text_embedding, "GeneralConditioner > forward > temporal_text_embedding >")
+
+        #prepare output[temporal_crossattn_context_key] conditions context
+        temporal_conditions_context_embedding = []
+        for i in range(batch[temporal_conditions_context_key].size(0)):
+          temporal_conditions_context_embedding_i = self.temporal_context_embedder(batch[temporal_conditions_context_key][i], temporal_text_embedding[i])
+          temporal_conditions_context_embedding.append(temporal_conditions_context_embedding_i)
+        temporal_conditions_context_embedding = torch.stack(temporal_conditions_context_embedding)
+        print_all(temporal_conditions_context_embedding, "GeneralConditioner > forward > temporal_conditions_context_embedding >")
+
+        #prepare output[temporal_crossattn_context_key]
+        temporal_image_embedding = temporal_image_embedding.to("cuda")
+        temporal_text_embedding = temporal_text_embedding.to("cuda")
+        temporal_conditions_context_embedding = temporal_conditions_context_embedding.to("cuda")
+        print_all(temporal_image_embedding, "GeneralConditioner > forward > temporal_image_embedding >")
+        print_all(temporal_text_embedding, "GeneralConditioner > forward > temporal_text_embedding >")
+        print_all(temporal_conditions_context_embedding, "GeneralConditioner > forward > temporal_conditions_context_embedding >")
+
+        temporal_crossattn_context_embedding = batch[temporal_image_weight_key][0].item() * temporal_image_embedding + batch[temporal_text_weight_key][0].item() * temporal_text_embedding + batch[temporal_conditions_context_weight_key][0].item() * temporal_conditions_context_embedding 
+        output[temporal_crossattn_context_key] = temporal_crossattn_context_embedding
+        print_all(output[temporal_crossattn_context_key], "GeneralConditioner > forward > output[temporal_crossattn_context_key] > after combined >")
+
+        #modified code end
 
         return output
 
@@ -502,7 +570,8 @@ class FrozenOpenCLIPEmbedder2(AbstractEmbModel):
         x = self.model.token_embedding(text)  # [batch_size, n_ctx, d_model]
         x = x + self.model.positional_embedding
         x = x.permute(1, 0, 2)  # NLD -> LND
-        x = self.text_transformer_forward(x, attn_mask=self.model.attn_mask)
+        #x = self.text_transformer_forward(x, attn_mask=self.model.attn_mask)
+        x = self.text_transformer_forward(x)
         if self.legacy:
             x = x[self.layer]
             x = self.model.ln_final(x)

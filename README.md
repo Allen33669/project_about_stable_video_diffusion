@@ -36,10 +36,72 @@
 <blockquote>
 <h3>Features: </h3>
 <blockquote>
+Stable Video Diffusion: A brief introduction to the paper and SVD source code: SVD LoRA fine-tuning, add text condition, simple lora analysis<br>
+  <blockquote>
+  project_about_stable_video_diffusion_2_10_0.ipynb<br>
+    A brief introduction:<br> 
+      framework<br>
+        <blockquote>
+        decouple the components of the framework<br>
+        sampling method<br>
+        continuous-time common Diffusion Model framework<br>
+        find differentiation of x<br>
+        neural network's target is score function<br>
+        </blockquote>
+      model architecture<br>
+        <blockquote>
+        transformer for video<br>
+        residual block for video<br>
+        decoder<br>
+        </blockquote>
+      conditions<br>
+        <blockquote>
+        embedding style<br>
+        fuse style<br>
+        </blockquote>
+      LoRA<br>
+        <blockquote>
+        PEFT (Parameter-Efficient Fine-Tuning) and LoRA (Low-Rank Adaptation): A brief introduction to LoRA<br>
+        </blockquote>
+      VideoMage<br>
+        <blockquote>
+        VideoMage: Multi-Subject and Motion Customization of Text-to-Video Diffusion Models<br>
+        Refer to VideoMage and its application in this project<br>
+        </blockquote>
+      VACE<br>
+        <blockquote>
+        VACE: All-in-One Video Creation and Editing<br>
+        Refer to VACE and its application in this project<br>
+        </blockquote>
+   </blockquote>
+   <blockquote>
+    code:<br>
+      dataset:<br>
+        <blockquote>
+        SVD dataset for input concatenation, spatial context of cross attention, temporal context of cross attention.
+        For spatial and temporal context embedding, generate context with video frames, video frame masks, ref image, ref mask.
+        </blockquote>
+      model:<br>
+        <blockquote>
+        The input condition part is subdivided into input concatenation, spatial context of cross attention, and temporal context of cross attention according to the original architecture of the SVD model.<br>
+        Spatial context embedder is used to embed various combined conditional inputs for spatial context of cross attention.<br>
+        Temporal context embedder is used to embed various combined conditional inputs for temporal context of cross attention.<br>
+        </blockquote>
+      optimizer:<br>
+        <blockquote>
+        different learning rate: lora down learning rate > lora up learning rate<br>
+        </blockquote>
+      regularization:<br>
+        <blockquote>
+        dropout<br>
+        weight decay<br>
+        early stopping<br>
+        </blockquote>
+<br>
 Stable Video Diffusion: A brief introduction to the paper and SVD source code: SVD LoRA fine-tuning, add text condition, Spatial-Temporal Collaborative Sampling (SCS) (VideoMage)<br>
   <blockquote>
   project_about_stable_video_diffusion_2_11_1.ipynb<br>
-    Sampling with Subject branch and Motion branch in EDM. Refer to Spatial-Temporal Collaborative Sampling (SCS) (VideoMage).<br><br>
+    Sampling with Subject branch and Motion branch in EDM. Refer to Spatial-Temporal Collaborative Sampling (SCS) (VideoMage).<br>
   </blockquote>
 <br>
 Stable Video Diffusion: A brief introduction to the paper and SVD source code: SVD LoRA fine-tuning, add text condition, simple lora analysis<br>
@@ -282,6 +344,10 @@ project_about_stable_video_diffusion_0_1_0.ipynb<br>
 </blockquote>
 </blockquote>
 <br>
+
+
+
+
 
 
 

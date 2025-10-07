@@ -8,6 +8,11 @@ from .denoiser_scaling import DenoiserScaling
 from .discretizer import Discretization
 
 
+
+from my_utils import * #modified code start end
+
+
+
 class Denoiser(nn.Module):
     def __init__(self, scaling_config: Dict):
         super().__init__()
@@ -30,6 +35,7 @@ class Denoiser(nn.Module):
     ) -> torch.Tensor:
 
         #modified code start
+        print_all(input, "Denoiser > forward > input >")
         torch.save({"current_timestep": sigma}, "/content/generative-models/current_timestep.tar")
         #modified code end
 

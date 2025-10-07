@@ -240,11 +240,6 @@ class SpatialVideoTransformer(SpatialTransformer):
         image_only_indicator: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
 
-        if torch.isnan(x).sum() > 0:
-          print(f'SpatialVideoTransformer > forward > start > torch.isnan(x).sum(): {torch.isnan(x).sum()}')
-          #x = torch.where(torch.isnan(x), torch.tensor(0.0000000001), x)
-          print(f'SpatialVideoTransformer > forward > start > torch.isnan(x).sum(): {torch.isnan(x).sum()}')
-
         _, _, h, w = x.shape
         x_in = x
         spatial_context = None
@@ -322,10 +317,6 @@ class SpatialVideoTransformer(SpatialTransformer):
                 x,
                 context=spatial_context,
             )
-            if torch.isnan(x).sum() > 0:
-              print(f'SpatialVideoTransformer > forward > block( > torch.isnan(x).sum(): {torch.isnan(x).sum()}')
-              #x = torch.where(torch.isnan(x), torch.tensor(0.0000000001), x)
-              print(f'SpatialVideoTransformer > forward > block( > torch.isnan(x).sum(): {torch.isnan(x).sum()}')
             
             #modified code start
             x_mix = x
@@ -338,10 +329,6 @@ class SpatialVideoTransformer(SpatialTransformer):
             #modified code start
             #x_mix: Q, context: K, V
             x_mix = mix_block(x_mix, context=time_context, timesteps=timesteps)
-            if torch.isnan(x_mix).sum() > 0:
-              print(f'SpatialVideoTransformer > forward > block( > torch.isnan(x_mix).sum(): {torch.isnan(x_mix).sum()}')
-              #x_mix = torch.where(torch.isnan(x), torch.tensor(0.0000000001), x_mix)
-              print(f'SpatialVideoTransformer > forward > block( > torch.isnan(x_mix).sum(): {torch.isnan(x_mix).sum()}')
 
             #modified code end
 
@@ -350,10 +337,7 @@ class SpatialVideoTransformer(SpatialTransformer):
                 x_temporal=x_mix,
                 image_only_indicator=image_only_indicator,
             )
-            if torch.isnan(x).sum() > 0:
-              print(f'SpatialVideoTransformer > forward > self.time_mixer > torch.isnan(x).sum(): {torch.isnan(x).sum()}')
-              #x = torch.where(torch.isnan(x), torch.tensor(0.0000000001), x)
-              print(f'SpatialVideoTransformer > forward > self.time_mixer > torch.isnan(x).sum(): {torch.isnan(x).sum()}')
+
 
         if self.use_linear:
             x = self.proj_out(x)

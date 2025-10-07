@@ -3,6 +3,22 @@ This Stability AI Model is licensed under the Stability AI Community License, Co
 Powered by Stability AI
 
 Derivative Work:
+      dataset: 
+        SVD dataset for input concatenation, spatial context of cross attention, temporal context of cross attention
+        For spatial and temporal context embedding, generate context with video frames, video frame masks, ref image, ref mask 
+      model:
+        The input condition part is subdivided into input concatenation, spatial context of cross attention, and temporal context of cross attention according to the original architecture of the SVD model.
+        Spatial context embedder is used to embed various combined conditional inputs for spatial context of cross attention.
+        Temporal context embedder is used to embed various combined conditional inputs for temporal context of cross attention.
+      optimizer:
+        different learning rate: lora down learning rate > lora up learning rate
+      regularization:
+        dropout
+        weight decay
+        early stopping
+
+
+
       Sampling with Subject branch and Motion branch in EDM. Refer to Spatial-Temporal Collaborative Sampling (SCS) (VideoMage).
 
 

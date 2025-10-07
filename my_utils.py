@@ -48,9 +48,78 @@ def load_model(
     )
     if device == "cuda":
         with torch.device(device):
-            model = instantiate_from_config(config.model).to(device) 
+            model = instantiate_from_config(config.model).to(device) #modified code start end
     else:
-        model = instantiate_from_config(config.model).to(device) 
+        model = instantiate_from_config(config.model).to(device) #modified code start end
 
     filter = DeepFloydDataFiltering(verbose=False, device=device)
     return model, filter
+
+
+
+#print list, dictionary, tensor, other 
+def print_all(target, description):
+  print("_" * 60)
+  print(f"{description} type(target): {type(target)}")
+
+  if isinstance(target, list):
+    print_list(target, description + " list >")
+  elif isinstance(target, tuple):
+    print_tuple(target, description + " tuple >")
+  elif isinstance(target, dict):
+    print_dict(target, description + " dict >")
+  elif isinstance(target, np.ndarray):
+    ndarray_tensor = torch.from_numpy(target)
+    print_tensor(ndarray_tensor, description + " np.ndarray >")
+  elif isinstance(target, torch.Tensor):
+    print_tensor(target, description + " Tensor >")
+  else:
+    print(f"{description} : {target}")
+
+
+
+#print list 
+def print_list(target, description):
+  print("_" * 60)
+  try:
+    list_tensor = torch.tensor(target)
+    print_tensor(list_tensor, description + " list to tensor >")
+  except Exception as e:
+    for list_item in target:
+      print_all(list_item, description + " list >")
+
+
+
+#print tuple 
+def print_tuple(target, description):
+  print("_" * 60)
+  for item in target:
+    try:
+      item_tensor = torch.tensor(item)
+      print_tensor(item_tensor, description + " tuple to tensor >")
+    except Exception as e:
+      for item in target:
+        print_all(item, description + " tuple >")
+
+
+
+#print dictionary 
+def print_dict(target, description):
+  print("_" * 60)
+  for key, value in target.items():
+    print(f"{description} key: {key}")
+    print(f"{description} type(value): {type(value)}")
+    print_all(value, description + " " + key + " > value >")
+
+
+
+#print tensor
+def print_tensor(tensor, description):
+  print("_" * 60)
+  if isinstance(tensor, torch.Tensor):
+    print(f"{description} tensor.shape: {tensor.shape}")
+    print(f"{description} tensor.float().mean(): {tensor.float().mean()}")
+    print(f"{description} tensor.float().min(): {tensor.float().min()}")
+    print(f"{description} tensor.float().max(): {tensor.float().max()}")
+  else:
+    print(f"{description} is not tensor!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")

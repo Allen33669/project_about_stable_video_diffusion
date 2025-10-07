@@ -190,15 +190,6 @@ class DiffusionEngine(pl.LightningModule):
         return loss, loss_dict
 
     def training_step(self, batch, batch_idx):
-        print(f'DiffusionEngine > training_step > type(batch): {type(batch)}')
-        for key, value in batch.items():
-          print(f'DiffusionEngine > training_step > batch > key: {key}')
-          print(f'DiffusionEngine > training_step > batch > type(value): {type(value)}')
-          if isinstance(value, torch.Tensor):
-            print(f'DiffusionEngine > training_step > batch > value.shape: {value.shape}')
-          else:
-            print(f'DiffusionEngine > training_step > batch > value: {value}')
-
         batch["num_video_frames"] = self.num_video_frames #modified code start end
         batch["image_only_indicator"] = torch.tensor(self.image_only_indicator, device="cuda") #modified code start end
 
