@@ -222,6 +222,17 @@ PEFT (Parameter-Efficient Fine-Tuning) and LoRA (Low-Rank Adaptation): A brief i
 <br>
 <br>
 <br>
+<h3>2.15.0: </h3>
+<blockquote>
+Stable Video Diffusion: A brief introduction to the paper and SVD source code: Integrate the requirements of various tasks by organizing video task inputs (VACE)<br>
+  project_about_stable_video_diffusion_2_15_0.ipynb:<br>
+    The input condition part is subdivided into input concatenation, spatial context of cross attention, and temporal context of cross attention according to the original architecture of the SVD model. For the input conditions of SVD, please refer to conditions > fuse style.<br>
+    Integrate the requirements of various tasks by organizing video task inputs, and apply to spatial context of cross attention, and temporal context of cross attention. Refer to VACE: All-in-One Video Creation and Editing.<br> 
+    Spatial context embedder is used to embed various combined conditional inputs for spatial context of cross attention.<br>
+    Temporal context embedder is used to embed various combined conditional inputs for temporal context of cross attention.<br>
+    Only train spatial context embedder and temporal context embedder.<br>
+</blockquote>
+<br>
 <h3>2.11.1: </h3>
 <blockquote>
 Stable Video Diffusion: A brief introduction to the paper and SVD source code: SVD LoRA fine-tuning, add text condition, Spatial-Temporal Collaborative Sampling (SCS) (VideoMage)<br>
@@ -344,6 +355,7 @@ project_about_stable_video_diffusion_0_1_0.ipynb<br>
 </blockquote>
 </blockquote>
 <br>
+
 
 
 
