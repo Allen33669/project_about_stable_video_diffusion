@@ -36,9 +36,9 @@
 <blockquote>
 <h3>Features: </h3>
 <blockquote>
-Stable Video Diffusion: A brief introduction to the paper and SVD source code: SVD LoRA fine-tuning, add text condition, simple lora analysis<br>
+Stable Video Diffusion: A brief introduction to the paper and SVD source code: Integrate the requirements of various tasks by organizing video task inputs (VACE)<br>
   <blockquote>
-  project_about_stable_video_diffusion_2_10_0.ipynb<br>
+  project_about_stable_video_diffusion_2_15_0.ipynb<br>
     A brief introduction:<br> 
       framework<br>
         <blockquote>
@@ -344,8 +344,6 @@ project_about_stable_video_diffusion_0_1_0.ipynb<br>
 </blockquote>
 </blockquote>
 <br>
-
-
 
 
 
