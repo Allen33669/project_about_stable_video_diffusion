@@ -216,7 +216,6 @@ class SpatialContextEmbedder(nn.Module):
     cross_attn_num_heads: int=8, 
     cross_attn_dropout: float=0.1, 
     cross_attn_batch_first: bool=True, 
-    #projector_in_features: int=1*32*32*256, # Shape: [(Tv+Tr)/17 * Hv/2/2/2/2 * Wv/2/2/2/2 * (C2d=256)] 
     projector_out_features: int=1024,  
   ):
     super(SpatialContextEmbedder, self).__init__()
@@ -227,8 +226,10 @@ class SpatialContextEmbedder(nn.Module):
     self.device = device
     self.conv_out_channels = conv_out_channels
 
+    #Conv2d
     self.conv2d = nn.Conv2d(in_channels=conv_in_channels, out_channels=conv_out_channels, kernel_size=conv_kernel_size, stride=conv_stride, padding=conv_padding)
 
+    #Conv2d downsampling
     conv2d_downsampling_layers = []
     current_conv_downsampling_ch_mul = 1
     for i in range(0, conv_downsampling_layers):
@@ -243,6 +244,7 @@ class SpatialContextEmbedder(nn.Module):
       conv2d_downsampling_layers.append(nn.ReLU())
       current_conv_downsampling_ch_mul = current_conv_downsampling_ch_mul * conv_downsampling_ch_mul
 
+    #set params after Conv2d downsampling
     self.current_conv_downsampling_ch_mul = current_conv_downsampling_ch_mul
     height = int(self.height / self.current_conv_downsampling_ch_mul)
     width = int(self.width / self.current_conv_downsampling_ch_mul)
@@ -250,27 +252,33 @@ class SpatialContextEmbedder(nn.Module):
 
     self.conv2d_downsampling = nn.Sequential(*conv2d_downsampling_layers)
 
+
+    #self-attention
     self.self_attn = nn.MultiheadAttention(embed_dim=conv_out_channels, num_heads=self_attn_num_heads, dropout=self_attn_dropout, batch_first=self_attn_batch_first)
 
+    #FeedForward
     self.ff_proj = nn.Linear(conv_out_channels, ff_proj_out_features)
     self.ff_activation = nn.GELU()
     self.ff_dropout = nn.Dropout(ff_dropout)
     self.ff_output = nn.Linear(ff_proj_out_features, conv_out_channels)
 
+    #cross-attention
     self.cross_attn = nn.MultiheadAttention(embed_dim=conv_out_channels, kdim=cross_attn_k_v_dim, vdim=cross_attn_k_v_dim, num_heads=cross_attn_num_heads, dropout=cross_attn_dropout, batch_first=cross_attn_batch_first)
 
+    #downsampling pool
     self.adaptive_avg_pool_3d = nn.AdaptiveAvgPool3d((1, height, width))
 
+    #project output
     projector_in_features = int(conv_out_channels * height * width)
     self.projector = nn.Linear(projector_in_features, projector_out_features)
 
 
 
   """
-  description: 
+  description: embed spatial context by vace context and context 
   params:
   -vace_context: encoded video, ref image, and masks tensor, Shape: [Cv*3, Tv+Tr, Hv, Wv], Scale: [-1, 1] and [0, 1]
-  -context: text embedding, Shape: [1, 1, 1024] ([batch, token, depth])
+  -context: text embedding, Shape: [1, 1024] ([token, depth])
   return: spatial context embedding
   """
   def forward(
@@ -284,41 +292,53 @@ class SpatialContextEmbedder(nn.Module):
     vace_context = vace_context.to(self.device)
     context = context.to(self.device)
     context = context.repeat(self.T, 1, 1)  # shape: [7, 1, 1024]
+    print_all(context, "SpatialContextEmbedder > forward > context > context.repeat(self.T, 1, 1) >")
 
+    #set params after Conv2d downsampling
     height = int(self.height / self.current_conv_downsampling_ch_mul)
     width = int(self.width / self.current_conv_downsampling_ch_mul)
     conv_out_channels = int(self.conv_out_channels * self.current_conv_downsampling_ch_mul)
+    print_all(height, "SpatialContextEmbedder > forward > height > downsampling >")
+    print_all(width, "SpatialContextEmbedder > forward > width > downsampling >")
+    print_all(conv_out_channels, "SpatialContextEmbedder > forward > conv_out_channels > downsampling >")
 
     #Conv2d
     vace_context = vace_context.permute(1, 0, 2, 3) # Shape: [Tv+Tr, Cv*3=9, Hv, Wv], Scale: [-1, 1] 
     vace_context = self.conv2d(vace_context) # Shape: [Tv+Tr, C2d=16, Hv=512, Wv=512] 
+    print_all(vace_context, "SpatialContextEmbedder > forward > vace_context > self.conv2d(vace_context) >")
 
     #Conv2d downsampling
     vace_context = self.conv2d_downsampling(vace_context) # Shape: [Tv+Tr, C2d=16*2*2*2*2=256, Hv=512/2/2/2/2=32, Wv=512/2/2/2/2=32] 
+    print_all(vace_context, "SpatialContextEmbedder > forward > vace_context > self.conv2d_downsampling(vace_context) >")
 
     #self-attention
     vace_context = vace_context.permute(0, 2, 3, 1)  # Shape: [Tv+Tr, Hv=32, Wv=32, C2d=256] 
     vace_context = vace_context.view(self.T, height * width, conv_out_channels)  # Shape: [Tv+Tr, Hv * Wv = 32 * 32, C2d=256] 
     vace_context, vace_context_self_attn_weights = self.self_attn(vace_context, vace_context, vace_context)  # Shape: [Tv+Tr, Hv * Wv = 32 * 32, C2d=256] 
+    print_all(vace_context, "SpatialContextEmbedder > forward > vace_context > self.self_attn >")
 
     #FeedForward
     vace_context = self.ff_proj(vace_context)  # Shape: [Tv+Tr, Hv * Wv = 32 * 32, Cproj=512] 
     vace_context = self.ff_activation(vace_context)  # Shape: [Tv+Tr, Hv * Wv = 32 * 32, Cproj=512] 
     vace_context = self.ff_dropout(vace_context)  # Shape: [Tv+Tr, Hv * Wv = 32 * 32, Cproj=512] 
-    vace_context = self.ff_output(vace_context)  # Shape: [Tv+Tr, Hv * Wv = 32 * 32, C2d=256] 
+    vace_context = self.ff_output(vace_context)  # Shape: [Tv+Tr, Hv * Wv = 32 * 32, C2d=256]
+    print_all(vace_context, "SpatialContextEmbedder > forward > vace_context > self.ff_output(vace_context) >") 
 
     #cross-attention
     vace_context, vace_context_cross_attn_weights = self.cross_attn(vace_context, context, context)  # Shape: [Tv+Tr, Hv * Wv = 32 * 32, C2d=256] 
+    print_all(vace_context, "SpatialContextEmbedder > forward > vace_context > self.cross_attn >") 
 
-    #downsampling
+    #downsampling pool
     vace_context = vace_context.view(self.T, height, width, conv_out_channels)  # Shape: [Tv+Tr, Hv = 32, Wv = 32, C2d=256] 
     vace_context = vace_context.permute(3, 0, 1, 2)  # Shape: [C2d=256, Tv+Tr, Hv = 32, Wv = 32]  
-    vace_context = self.adaptive_avg_pool_3d(vace_context) # Shape: [C2d=256, (Tv+Tr)/17=1, Hv = 32, Wv = 32]  
+    vace_context = self.adaptive_avg_pool_3d(vace_context) # Shape: [C2d=256, (Tv+Tr)/17=1, Hv = 32, Wv = 32] 
+    print_all(vace_context, "SpatialContextEmbedder > forward > vace_context > self.adaptive_avg_pool_3d(vace_context) >")  
 
-    #project
+    #project output
     vace_context_flat = vace_context.reshape(-1)  # Shape: [256 * 1 * 32 * 32]
     vace_context_embedding = self.projector(vace_context_flat)  # Shape: [1024] 
     vace_context_embedding = vace_context_embedding.unsqueeze(0) # Shape: [1, 1024] 
+    print_all(vace_context_embedding, "SpatialContextEmbedder > forward > vace_context_embedding > unsqueeze(0) >")  
 
     return vace_context_embedding
 
@@ -357,7 +377,6 @@ class TemporalContextEmbedder(nn.Module):
     cross_attn_num_heads: int=8, 
     cross_attn_dropout: float=0.1, 
     cross_attn_batch_first: bool=True, 
-    #projector_in_features: int=16*16*17*64, # Shape: [Hv/32 * Wv/32 * (Tv+Tr) * (C3d=64)] 
     projector_out_features: int=1024,  
   ):
     super(TemporalContextEmbedder, self).__init__()
@@ -368,8 +387,10 @@ class TemporalContextEmbedder(nn.Module):
     self.device = device
     self.conv_out_channels = conv_out_channels
 
+    #Conv3d
     self.conv3d = nn.Conv3d(in_channels=conv_in_channels, out_channels=conv_out_channels, kernel_size=conv_kernel_size, stride=conv_stride, padding=conv_padding)
 
+    #Conv2d downsampling
     conv2d_downsampling_layers = []
     current_conv_downsampling_ch_mul = 1
     for i in range(0, conv_downsampling_layers):
@@ -384,6 +405,7 @@ class TemporalContextEmbedder(nn.Module):
       conv2d_downsampling_layers.append(nn.ReLU())
       current_conv_downsampling_ch_mul = current_conv_downsampling_ch_mul * conv_downsampling_ch_mul
 
+    #set params after Conv2d downsampling
     self.current_conv_downsampling_ch_mul = current_conv_downsampling_ch_mul
     height = int(self.height / self.current_conv_downsampling_ch_mul)
     width = int(self.width / self.current_conv_downsampling_ch_mul)
@@ -391,17 +413,22 @@ class TemporalContextEmbedder(nn.Module):
 
     self.conv2d_downsampling = nn.Sequential(*conv2d_downsampling_layers)
 
+    #self-attention
     self.self_attn = nn.MultiheadAttention(embed_dim=conv_out_channels, num_heads=self_attn_num_heads, dropout=self_attn_dropout, batch_first=self_attn_batch_first)
 
+    #FeedForward
     self.ff_proj = nn.Linear(conv_out_channels, ff_proj_out_features)
     self.ff_activation = nn.GELU()
     self.ff_dropout = nn.Dropout(ff_dropout)
     self.ff_output = nn.Linear(ff_proj_out_features, conv_out_channels)
 
+    #cross-attention
     self.cross_attn = nn.MultiheadAttention(embed_dim=conv_out_channels, kdim=cross_attn_k_v_dim, vdim=cross_attn_k_v_dim, num_heads=cross_attn_num_heads, dropout=cross_attn_dropout, batch_first=cross_attn_batch_first)
 
+    #downsampling pool
     self.adaptive_avg_pool_3d = nn.AdaptiveAvgPool3d((self.T, int(height/2), int(width/2)))
 
+    #project output
     projector_in_features = int(conv_out_channels * self.T * height/2 * width/2)
     self.projector = nn.Linear(projector_in_features, projector_out_features)
 
@@ -409,10 +436,10 @@ class TemporalContextEmbedder(nn.Module):
 
 
   """
-  description: 
+  description: embed temporal context by vace context and context
   params:
   -vace_context: encoded video, ref image, and masks tensor, Shape: [Cv*3, Tv+Tr, Hv, Wv], Scale: [-1, 1] and [0, 1]
-  -context: text embedding, Shape: [1, 1, 1024] ([batch, token, depth])
+  -context: text embedding, Shape: [1, 1024] ([token, depth])
   return: temporal context embedding
   """
   def forward(
@@ -426,40 +453,53 @@ class TemporalContextEmbedder(nn.Module):
     vace_context = vace_context.to(self.device)
     context = context.to(self.device)
 
+    #set params after Conv2d downsampling
     height = int(self.height / self.current_conv_downsampling_ch_mul)
     width = int(self.width / self.current_conv_downsampling_ch_mul)
     conv_out_channels = int(self.conv_out_channels * self.current_conv_downsampling_ch_mul)
+    print_all(height, "TemporalContextEmbedder > forward > height > downsampling >")
+    print_all(width, "TemporalContextEmbedder > forward > width > downsampling >")
+    print_all(conv_out_channels, "TemporalContextEmbedder > forward > conv_out_channels > downsampling >")
+
     context = context.repeat(height * width, 1, 1)  # shape: [Hv * Wv = 32 * 32, 1, 1024]
+    print_all(context, "TemporalContextEmbedder > forward > context > context.repeat(height * width, 1, 1) >")
 
     #Conv3d
-    vace_context = self.conv3d(vace_context)  # Shape: [C3d=64, Tv+Tr, Hv=512, Wv=512] 
+    vace_context = self.conv3d(vace_context)  # Shape: [C3d=16, Tv+Tr, Hv=512, Wv=512] 
+    print_all(vace_context, "TemporalContextEmbedder > forward > vace_context > self.conv3d(vace_context) >")
 
     #Conv2d downsampling
-    vace_context = vace_context.permute(1, 0, 2, 3) # Shape: [Tv+Tr, C3d=64, Hv=512, Wv=512]
-    vace_context = self.conv2d_downsampling(vace_context) # Shape: [Tv+Tr, C2d=64*2*2*2*2=1024, Hv=512/2/2/2/2=32, Wv=512/2/2/2/2=32] 
+    vace_context = vace_context.permute(1, 0, 2, 3) # Shape: [Tv+Tr, C3d=16, Hv=512, Wv=512]
+    vace_context = self.conv2d_downsampling(vace_context) # Shape: [Tv+Tr, C2d=16*2*2*2*2=256, Hv=512/2/2/2/2=32, Wv=512/2/2/2/2=32] 
+    print_all(vace_context, "TemporalContextEmbedder > forward > vace_context > self.conv2d_downsampling(vace_context) >")
 
     #self-attention
-    vace_context = vace_context.permute(2, 3, 0, 1)  # Shape: [Hv=32, Wv=32, Tv+Tr, C2d=1024] 
-    vace_context = vace_context.view(height * width, self.T, conv_out_channels)  # Shape: [Hv * Wv = 32 * 32, Tv+Tr, C2d=1024] 
-    vace_context, vace_context_self_attn_weights = self.self_attn(vace_context, vace_context, vace_context)  # Shape: [Hv * Wv = 32 * 32, Tv+Tr, C2d=1024]  
+    vace_context = vace_context.permute(2, 3, 0, 1)  # Shape: [Hv=32, Wv=32, Tv+Tr, C2d=256] 
+    vace_context = vace_context.view(height * width, self.T, conv_out_channels)  # Shape: [Hv * Wv = 32 * 32, Tv+Tr, C2d=256] 
+    vace_context, vace_context_self_attn_weights = self.self_attn(vace_context, vace_context, vace_context)  # Shape: [Hv * Wv = 32 * 32, Tv+Tr, C2d=256]  
+    print_all(vace_context, "TemporalContextEmbedder > forward > vace_context > self.self_attn >")
 
     #FeedForward
     vace_context = self.ff_proj(vace_context)  # Shape: [Hv * Wv = 32 * 32, Tv+Tr, Cproj=512] 
     vace_context = self.ff_activation(vace_context)  # Shape: [Hv * Wv = 32 * 32, Tv+Tr, Cproj=512] 
     vace_context = self.ff_dropout(vace_context)  # Shape: [Hv * Wv = 32 * 32, Tv+Tr, Cproj=512] 
-    vace_context = self.ff_output(vace_context)  # Shape: [Hv * Wv = 32 * 32, Tv+Tr, Cproj=1024] 
+    vace_context = self.ff_output(vace_context)  # Shape: [Hv * Wv = 32 * 32, Tv+Tr, Cproj=256] 
+    print_all(vace_context, "TemporalContextEmbedder > forward > vace_context > self.ff_output(vace_context) >")
 
     #cross-attention
-    vace_context, vace_context_cross_attn_weights = self.cross_attn(vace_context, context, context)  # Shape: [Hv * Wv = 32 * 32, Tv+Tr, Cproj=1024] 
+    vace_context, vace_context_cross_attn_weights = self.cross_attn(vace_context, context, context)  # Shape: [Hv * Wv = 32 * 32, Tv+Tr, Cproj=256] 
+    print_all(vace_context, "TemporalContextEmbedder > forward > vace_context > self.cross_attn >")
 
     #downsampling
-    vace_context = vace_context.view(height, width, self.T, conv_out_channels)  # Shape: [Hv=32, Wv=32, Tv+Tr, Cproj=1024] 
-    vace_context = vace_context.permute(3, 2, 0, 1)  # Shape: [Cproj=1024, Tv+Tr, Hv=32, Wv=32]  
-    vace_context = self.adaptive_avg_pool_3d(vace_context) # Shape: [Cproj=1024, Tv+Tr, Hv=16, Wv=16] 
+    vace_context = vace_context.view(height, width, self.T, conv_out_channels)  # Shape: [Hv=32, Wv=32, Tv+Tr, Cproj=256] 
+    vace_context = vace_context.permute(3, 2, 0, 1)  # Shape: [Cproj=256, Tv+Tr, Hv=32, Wv=32]  
+    vace_context = self.adaptive_avg_pool_3d(vace_context) # Shape: [Cproj=256, Tv+Tr, Hv=16, Wv=16] 
+    print_all(vace_context, "TemporalContextEmbedder > forward > vace_context > self.adaptive_avg_pool_3d(vace_context) >")
 
     #project
-    vace_context_flat = vace_context.reshape(-1)  # Shape: [1024 * 7 * 16 * 16]  
+    vace_context_flat = vace_context.reshape(-1)  # Shape: [256 * 7 * 16 * 16]  
     vace_context_embedding = self.projector(vace_context_flat)  # Shape: [1024] 
-    vace_context_embedding.unsqueeze(0) # Shape: [1, 1, 1024]
+    vace_context_embedding = vace_context_embedding.unsqueeze(0) # Shape: [1, 1024]
+    print_all(vace_context_embedding, "TemporalContextEmbedder > forward > vace_context_embedding > unsqueeze(0) >")
 
     return vace_context_embedding
